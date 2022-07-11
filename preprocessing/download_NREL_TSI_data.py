@@ -18,15 +18,16 @@ import ssl
 
 image_data_dir = os.path.join(os.path.dirname(__file__), '../data/NREL')
 
-preprocess_image_type = ["_11.jpg", "_12.jpg"]
+preprocess_image_type = [".raw.png"]
 
-file_type_mappings = {"_11.jpg": "_Raw_NE.jpg",
-                       "_11_NE.jpg": "_Projection_NE.jpg",
-                       "_12.jpg": "_Raw_UE.jpg",
-                       "_12_UE.jpg": "_Projection_UE.jpg",
-                       "_1112_BRBG.png": "_Segmented_BRBG.png",
-                       "_1112_CDOC.png": "_Segmented_CDOC.png",
-                       ".txt": "_Image_Data.txt"}
+file_type_mappings = {".raw.jpg": "_Raw.jpg",
+                      ".pro.png": "_proj.png"}
+
+tsi_years = [
+    2004, 2005, 2006, 2007, 2008, 2009, 
+    2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 
+    2020, 2021, 2022
+]
 
 # Classes and Functions
 
@@ -59,16 +60,11 @@ def ensure_rename_file():
 def preprocess_image(file):
     """
     Image preprocessing Tasks
-    - Mask timestamp
     - Mirror image
     """
     if any([file.endswith(image_type) for image_type in preprocess_image_type]):
         # Read image
         image = cv2.imread(file)
-        # Masking timestamp
-        mask = np.ones(image.shape[:2], dtype=np.uint8) * 255
-        cv2.rectangle(mask, (0, 0), (550, 30), 0, -1)
-        image = cv2.bitwise_and(image, image, mask=mask)
         # Mirror image
         image = cv2.flip(image, 1)
         # Write back
@@ -116,6 +112,7 @@ def download_data(year, month_start=1, month_end=12):
     """
     Download the data for a given month range of an year (default = full year)
     """
+    make_dir("../data/")  # make data directory if it doesn't exist
     make_dir(image_data_dir) # make /data/NREL folder if it doesn't exist
     base_url = 'https://midcdmz.nrel.gov/tsi/SRRL/' + str(year)
     for month in range(month_start, month_end+1):
@@ -130,5 +127,6 @@ def download_data(year, month_start=1, month_end=12):
 
 if __name__ == "__main__":
     # Download ASI Data: Uncomment based on your need
-   
+    for y in tsi_years:
+        download_data(y)
     ensure_rename_file()

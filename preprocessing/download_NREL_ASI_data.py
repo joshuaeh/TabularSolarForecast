@@ -26,6 +26,10 @@ file_type_mappings = {"_11.jpg": "_Raw_NE.jpg",
                        "_1112_CDOC.png": "_Segmented_CDOC.png",
                        ".txt": "_Image_Data.txt"}
 
+asi_years = [
+    2017, 2018, 2019, 
+    2020, 2021, 2022]
+
 # Classes and Functions
 
 def make_dir(dir):
@@ -114,6 +118,7 @@ def download_data(year, month_start=1, month_end=12):
     """
     Download the data for a given month range of an year (default = full year)
     """
+    make_dir("../data/")  # make data directory if it doesn't exist
     make_dir(image_data_dir) # make /data/NREL folder if it doesn't exist
     base_url = 'https://midcdmz.nrel.gov/tsi/SRRLASI/' + str(year)
     for month in range(month_start, month_end+1):
@@ -128,8 +133,5 @@ def download_data(year, month_start=1, month_end=12):
 
 if __name__ == "__main__":
     # Download ASI Data: Uncomment based on your need
-    #download_data(2018)
-    #download_data(2019)
-    #download_data(2020)
-    #download_data(2021, month_start=9, month_end=10)
+    [download_data(i) for i in asi_years]
     ensure_rename_file()
