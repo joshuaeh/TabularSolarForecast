@@ -35,7 +35,7 @@ def make_dir(dir):
     Make new directory if it doesn't exist
     """
     if not os.path.isdir(dir):
-        os.makedirs(dir)
+        os.makedirs(dir, exist_ok=True)
 
 def rename_file(file):
     """
@@ -130,8 +130,5 @@ def download_data(year, month_start=1, month_end=12):
 
 if __name__ == "__main__":
     # Download ASI Data: Uncomment based on your need
-    #download_data(2018)
-    #download_data(2019)
-    #download_data(2020)
-    #download_data(2021, month_start=9, month_end=10)
+   
     ensure_rename_file()

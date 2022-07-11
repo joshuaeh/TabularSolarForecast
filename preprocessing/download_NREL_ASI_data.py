@@ -33,7 +33,7 @@ def make_dir(dir):
     Make new directory if it doesn't exist
     """
     if not os.path.isdir(dir):
-        os.makedirs(dir)
+        os.makedirs(dir, exist_ok=True)
 
 def rename_file(file):
     """
