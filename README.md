@@ -20,6 +20,8 @@ Generally it will be a good idea to create a virtual environment for this projec
 
 #### Install requirements
 
+With the virtual environment activated, run `pip install -r requirements.txt`
+
 ### Preprocessing
 
 ## FAQ
