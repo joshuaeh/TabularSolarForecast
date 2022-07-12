@@ -6,6 +6,8 @@ as meteorological data. After September 26, 2017 it will also scrape the ASI-16 
 """
 
 #TODO make a master df or other data storage to determine which dates have been scraped. Maybe a start/stop date is sufficient for each data type
+#TODO Do our variables include wind speed, direction, and pressure?
+#TODO script currently requires CWD to be preprecessing. Make references universal
 
 # imports
 import os
@@ -16,8 +18,9 @@ import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 ################ Declarations ##################
+# Initial start date 2004,7,1
 
-start_date = datetime(2004,7,1)
+start_date = datetime(2006,6,9)
 day_delta = timedelta(days=1)
 end_date = datetime(2022,7,10)
 
