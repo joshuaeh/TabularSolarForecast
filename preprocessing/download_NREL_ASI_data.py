@@ -11,6 +11,7 @@ from datetime import date, timedelta
 import cv2
 import numpy as np
 import ssl
+import zipfile
 
 # Configuration and global variables
 
