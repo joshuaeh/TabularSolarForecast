@@ -8,7 +8,6 @@ as meteorological data. After September 26, 2017 it will also scrape the ASI-16 
 #TODO make a master df or other data storage to determine which dates have been scraped. Maybe a start/stop date is sufficient for each data type
 #TODO Do our variables include wind speed, direction, and pressure?
 #TODO script currently requires CWD to be preprecessing. Make references universal
-#TODO Download RSP, SSIM, 
 
 
 # imports
