@@ -30,8 +30,7 @@ end_date = datetime(2022,7,10)
 download_date = start_date
 
 while download_date < end_date:
-    # check that folders do not exist
-
+    try:
     # download
     Y = download_date.year
     YYYYMMDD = download_date.strftime("%Y%m%d")
