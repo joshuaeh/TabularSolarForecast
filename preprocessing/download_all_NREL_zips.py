@@ -15,6 +15,7 @@ import os
 from datetime import date, datetime, timedelta
 import wget
 import ssl
+from joblib import Parallel, delayed
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -25,11 +26,11 @@ start_date = datetime(2004,7,1)
 day_delta = timedelta(days=1)
 end_date = datetime(2022,7,10)
 
-################## Loop ########################
+N_JOBS = 8  # Edit with how many processses
 
-download_date = start_date
+################## Functions ########################
 
-while download_date < end_date:
+def download_date_specified(download_date):
     try:
         # download
         Y = download_date.year
@@ -104,7 +105,7 @@ while download_date < end_date:
         ## AODSSRL1E - ESR Aerosol Optical Depth
         if download_date >= datetime(2013,3,1):
             nrel_AODSSRL1E_url = f"https://midcdmz.nrel.gov/apps/data_api.pl?site=AODSSRL1EL&begin={YYYYMMDD}&end={YYYYMMDD}"
-            aod_path = f"../data/NREL/PWVSSRL/{YYYYMMDD}.csv"
+            aod_path = f"../data/NREL/AODSSRL1E/{YYYYMMDD}.csv"
             if not os.path.isfile(aod_path):
                 try:
                     wget.download(nrel_AODSSRL1E_url, out=aod_path)
@@ -113,7 +114,6 @@ while download_date < end_date:
                     pass
 
         ## RAZON - GHI, DNI, DHI from Feb 2017
-        ## AODSSRL1E - ESR Aerosol Optical Depth
         if download_date >= datetime(2017,2,1):
             nrel_RAZON_url = f"https://midcdmz.nrel.gov/apps/data_api.pl?site=RAZONL&begin={YYYYMMDD}&end={YYYYMMDD}"
             razon_path = f"../data/NREL/RAZON/{YYYYMMDD}.csv"
@@ -127,5 +127,17 @@ while download_date < end_date:
     except Exception as e:
         print(e)
         pass
+    
+    return
 
-    download_date += day_delta
+################# Scripts #################
+datetime_list = []
+
+dt = start_date
+
+while dt <= end_date:
+    datetime_list.append(dt)
+    dt += timedelta(days=1)
+
+# parallelize downloads
+Parallel(n_jobs=N_JOBS, verbose=5)(delayed(download_date_specified)(dt) for dt in datetime_list)
