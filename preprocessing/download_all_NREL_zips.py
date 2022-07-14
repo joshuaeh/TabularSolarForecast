@@ -36,7 +36,7 @@ while download_date < end_date:
     YYYYMMDD = download_date.strftime("%Y%m%d")
     print(YYYYMMDD)
 
-    ## TSI
+        ## TSI - Total Sky Imager
     nrel_tsi_url = f"https://midcdmz.nrel.gov/tsi/SRRL/{Y}/{YYYYMMDD}.zip"
     tsi_path = f"../data/NREL/TSI/{YYYYMMDD}.zip"
     if not (os.path.exists(tsi_path) or os.path.isdir(f"../data/NREL/TSI/{YYYYMMDD}/")):
@@ -46,13 +46,13 @@ while download_date < end_date:
             print(f"error {e} with TSI download: {YYYYMMDD}")
             pass
 
-    ## BMS
+        ## BMS - Baseline Measurement System
     nrel_bms_url = f"https://midcdmz.nrel.gov/apps/data_api.pl?site=BMS&begin={YYYYMMDD}&end={YYYYMMDD}"
     bms_path = f"../data/NREL/BMS/{YYYYMMDD}.csv"
     if not os.path.isfile(bms_path):
         wget.download(nrel_bms_url, out=bms_path)
 
-    ## irrsp
+        ## irrsp - Rotating Shadowband Pyranometer V2 - low cost option for global and diffuse irradiance
     nrel_irrsp_url = f"https://midcdmz.nrel.gov/apps/data_api.pl?site=IRRSP&begin={YYYYMMDD}&end={YYYYMMDD}"
     irrsp_path = f"../data/NREL/IRRSP/{YYYYMMDD}.csv"
     if not os.path.isfile(irrsp_path):
@@ -65,8 +65,13 @@ while download_date < end_date:
         if not(os.path.exists(asi_path) or os.path.isdir(f"../data/NREL/BMS/{YYYYMMDD}/")):
             try:
                 wget.download(nrel_asi_url, out=asi_path)
-            except:
+                except Exception as e:
                 print(f"error {e} with ASI {YYYYMMDD}")
                 pass
+
+
+    except Exception as e:
+        print(e)
+        pass
 
     download_date += day_delta
