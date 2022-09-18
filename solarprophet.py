@@ -626,21 +626,21 @@ class TabularTest():
         if gpus:
             strategy = tf.distribute.MirroredStrategy(gpus)
             with strategy.scope():
-                past_inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_past_features))
+                past_inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_past_features), name="PastInputs")
                 past_inputs_expanded = tf.keras.layers.Lambda(lambda x: tf.expand_dims(x,axis=-1),
-                                                    input_shape=(self.n_steps_in, self.n_past_features)) (past_inputs)
+                                                    input_shape=(self.n_steps_in, self.n_past_features), name="PastInputsExpanded") (past_inputs)
 
-                past_convolution = TimeDistributed(Conv1D(32,self.n_steps_in,padding="same", activation="relu"))(past_inputs_expanded)  # TODO check Kernel Size TODO SeperableConv1D TODO deep convolutions TODO Feed Conv results with unchanged inputs to deep LSTM
-                past_flattened = TimeDistributed(Flatten())(past_convolution)
+                past_convolution = TimeDistributed(Conv1D(32,self.n_steps_in,padding="same", activation="relu"), name="PastConvolution")(past_inputs_expanded)  # TODO check Kernel Size TODO SeperableConv1D TODO deep convolutions TODO Feed Conv results with unchanged inputs to deep LSTM
+                past_flattened = TimeDistributed(Flatten(), name="PastFlattened")(past_convolution)
 
-                x = LSTM(16)(past_flattened)
+                x = LSTM(16, name="LSTM")(past_flattened)
 
                 x = Dense(64, activation="relu")(x)
                 x = Dense(32, activation="relu")(x)
                 x = Dense(self.n_steps_out * self.n_responses, activation="relu")(x)
                 x = Reshape((self.n_steps_out, self.n_responses), input_shape=(self.n_steps_out * self.n_responses,))(x)
 
-                self.model = tf.keras.Model(inputs=past_flattened, outputs=x, name=model_name)
+                self.model = tf.keras.Model(inputs=past_inputs, outputs=x, name=model_name)
                 self.model.compile(optimizer, loss='mae')
         else:
             past_inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_past_features))
