@@ -656,7 +656,7 @@ class TabularTest():
             x = Dense(32, activation="relu")(x)
             x = Dense(self.n_steps_out * self.n_responses, activation="relu")(x)
             x = Reshape((self.n_steps_out, self.n_responses), input_shape=(self.n_steps_out * self.n_responses,))(x)
-            
+
             self.model = tf.keras.Model(inputs=past_flattened, outputs=x, name=model_name)
             self.model.compile(optimizer, loss='mae')
         return
@@ -722,13 +722,13 @@ class TabularTest():
         self.y_test_predicted = self.model.predict(self.test_past_features)
 
         # rescale
-        self.y_train_predicted_rescaled = self.rescale_to_GHI(self.y_train_predicted, self.train_clear_sky_irradiances)
-        self.y_validate_predicted_rescaled = self.rescale_to_GHI(self.y_validate_predicted, self.validate_clear_sky_irradiances)
-        self.y_test_predicted_rescaled = self.rescale_to_GHI(self.y_test_predicted, self.test_clear_sky_irradiances)
+        self.y_train_predicted_rescaled = self.rescale_to_GHI(self.y_train_predicted, self.train_clear_sky_irradiances, self.train_clear_sky_irradiances, self.train_clear_sky_indexes)
+        self.y_validate_predicted_rescaled = self.rescale_to_GHI(self.y_validate_predicted, self.validate_clear_sky_irradiances, self.validate_clear_sky_irradiances, self.validate_clear_sky_indexes)
+        self.y_test_predicted_rescaled = self.rescale_to_GHI(self.y_test_predicted, self.test_clear_sky_irradiances, self.test_clear_sky_irradiances, self.test_clear_sky_indexes)
 
-        self.y_train_true_rescaled = self.rescale_to_GHI(self.train_scalar_responses, self.train_clear_sky_irradiances)
-        self.y_validate_true_rescaled = self.rescale_to_GHI(self.validate_scalar_responses, self.validate_clear_sky_irradiances)
-        self.y_test_true_rescaled = self.rescale_to_GHI(self.test_scalar_responses, self.test_clear_sky_irradiances)
+        self.y_train_true_rescaled = self.rescale_to_GHI(self.train_scalar_responses, self.train_clear_sky_irradiances, self.train_clear_sky_irradiances, self.train_clear_sky_indexes)
+        self.y_validate_true_rescaled = self.rescale_to_GHI(self.validate_scalar_responses, self.validate_clear_sky_irradiances, self.validate_clear_sky_irradiances, self.validate_clear_sky_indexes)
+        self.y_test_true_rescaled = self.rescale_to_GHI(self.test_scalar_responses, self.test_clear_sky_irradiances, self.test_clear_sky_irradiances, self.test_clear_sky_indexes)
 
         # MAE
         self.run["Train MAE"] = self.MAE(self.y_train_true_rescaled, self.y_train_predicted_rescaled)
