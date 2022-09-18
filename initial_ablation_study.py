@@ -1,7 +1,6 @@
 # imports
 import os
-from xml.sax.handler import feature_external_ges
-from solarprophet import TabularTest
+from solarprophet import TabularTest, SOLARPROPHET_PATH
 
 # Functions
 
@@ -28,3 +27,12 @@ feature_tests=[
 for response in responses:
     for test in feature_tests:
         print(f"Response: {response} Features:{test}")
+        tt = TabularTest(neptune_run_name="Flexible Model Test",
+        scaler_type="minmax",
+        n_steps_in=13,
+        n_steps_out=12,
+        selected_responses=[response],
+        neptune_log=True,
+        model_save_path=os.path.join(SOLARPROPHET_PATH, "results"),
+        selected_groups=test)
+        tt.do_it_all()
