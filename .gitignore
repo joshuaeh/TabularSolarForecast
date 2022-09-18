@@ -3,6 +3,7 @@ data/
 *.DS_Store
 *.tmp
 .vscode/*
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

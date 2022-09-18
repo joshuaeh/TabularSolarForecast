@@ -1,3 +1,5 @@
+########## Imports ##########
+
 # Standard Library
 import os
 import datetime
@@ -6,6 +8,8 @@ import datetime
 # import pytz
 import time
 # import json
+from itertools import combinations_with_replacement
+from typing import Concatenate
 
 # Anaconda / Colab Standards
 import pandas as pd
@@ -26,7 +30,7 @@ from sklearn import preprocessing
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import TimeDistributed, LSTM, Dense, Flatten, Conv1D, Reshape
+from tensorflow.keras.layers import TimeDistributed, LSTM, Dense, Flatten, Conv1D, Reshape, Concatenate
 # from keras.metrics import MAE, MAPE, MSE
 
 ## PyTorch
@@ -35,14 +39,8 @@ from tensorflow.keras.layers import TimeDistributed, LSTM, Dense, Flatten, Conv1
 # pip installed libraries
 
 ## dask
-try:
-    import dask
-    import dask.dataframe as dd
-except ImportError:
-    ! python -m pip install 'fsspec>=0.3.3'
-    ! python -m pip install dask
-    import dask
-    import dask.dataframe as dd
+import dask
+import dask.dataframe as dd
 
 ## PVLib
 # try:
@@ -58,17 +56,8 @@ except ImportError:
 #     from pvlib.iotools import read_tmy3
 
 ## Neptune
-try:
-    from neptune.new.integrations.tensorflow_keras import NeptuneCallback
-    import neptune.new as neptune
-except ImportError:
-    try:
-        ! python -m pip install neptune-client neptune-tensorflow-keras
-        from neptune.new.integrations.tensorflow_keras import NeptuneCallback
-        import neptune.new as neptune
-    except ImportError:
-        from neptune.new.integrations.tensorflow_keras import NeptuneCallback
-        import neptune.new as neptune
+from neptune.new.integrations.tensorflow_keras import NeptuneCallback
+import neptune.new as neptune
 
 # Declarations
 pd.options.display.max_rows = 300
@@ -87,21 +76,31 @@ if gpu_devices:
 # import warnings
 # warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
-cwd = "drive/MyDrive/SolarProphet/Tabular Benchmark/"
+########## DECLARATIONS ##########
+
+# cwd = "drive/MyDrive/SolarProphet/Tabular Benchmark/"
 
 NEPTUNE_PROJECT = "HorizonPSE/SP-tab"
 NEPTUNE_TOKEN = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIxNTBhNmQ1Ny04MjAzLTQ2ZjUtODA2MC0yNDllNWUxOWE2ZjkifQ=="
+HOME = os.environ["HOME"]
+WORK = os.environ["WORK"]
+DATA_PATH = os.path.join("/work", "08940", "joshuaeh", "shared", "joint_data.csv")
+SOLARPROPHET_PATH = os.path.join(WORK, "projects", "SolarProphet")
 
 class TabularTest():
-    def __init__(self, 
-                 neptune_run_name, 
-                 scaler_type, 
-                 n_steps_in, 
-                 n_steps_out, 
-                 selected_features, 
-                 selected_responses, 
-                 neptune_log, 
-                 model_save_path):
+    def __init__(
+        self, 
+        neptune_run_name, 
+        scaler_type, 
+        n_steps_in, 
+        n_steps_out, 
+        selected_responses:list, 
+        neptune_log, 
+        model_save_path, 
+        selected_features=None,
+        selected_groups=None,
+        seed=42
+    ):
         # Declarations/parameters
         self.csv_cols = ["dateTime",
             # Irradiance    
@@ -194,95 +193,82 @@ class TabularTest():
                                 'cs_dev t ghi', 'cs_dev t dni', 'cs_dev t dhi']
         self.relative_response = ["Delta GHI", "Delta DNI", "Delta DHI", "Delta CSI"]
 
-        self.feature_groups = {"dateTime",
-            # Irradiance    
-            'GHI', 'DNI','DHI',
-            # Clouds (camera - related)
-            'BRBG Total Cloud Cover [%]', 'CDOC Total Cloud Cover [%]', 'CDOC Thick Cloud Cover [%]',
-            'CDOC Thin Cloud Cover [%]', 
-
-            'HCF Value', 'Blue/Red_min', 'Blue/Red_mid', 'Blue/Red_max',
-            # Clear Sky Irradiance
-
-            'clearsky ghi', 'clearsky dni', 'clearsky dhi', 
-
-            'cs_dev t ghi', 'cs_dev t dni', 'cs_dev t dhi',
-
-            'CSI GHI', 'CSI DNI', 'CSI DHI',
-
-            # Time
-            'TOD', 'TOD Sin', 'TOD Cos',
-
-            'TOY', 'TOY Sin', 'TOY Cos',
-
-            'time from sunrise', 'cos time from sunrise', 'sin time from sunrise', 
-
-            'time to solar noon', 'cos time to solar noon', 'sin time to solar noon',
-
-            'time to sunset',  'cos time to sunset',  'sin time to sunset',
-
-            'Day', 'before solar noon',
-
-            # Sun Flag (Camera - related)
-            'Flag: Sun not visible', 'Flag: Sun on clear sky', 'Flag: Parts of sun covered',
-            'Flag: Sun behind clouds, bright dot visible', 'Flag: Sun outside view', 
-            'Flag: No evaluation',
-
-            # Auxilary Weather Data
-            'Precipitation [mm]', 'Precipitation (Accumulated) [mm]', 'Station Pressure [mBar]', 
-            'Tower Dry Bulb Temp [deg C]', 'Tower RH [%]', 'Airmass',
-
-            'Wind NS [m/s]', 'Wind EW [m/s]',
-
-            'Avg Wind Speed @ 22ft [m/s]', 'Avg Wind Direction @ 22ft [deg from N]', 'Peak Wind Speed @ 22ft [m/s]',
-
-            'Snow Depth [cm]','Snow Depth Quality', 'SE Dry Bulb Temp [deg C]', 'SE RH [%]',
-            'Vertical Wind Shear [1/s]', 'Sea-Level Pressure (Est) [mBar]', 'Tower Dew Point Temp [deg C]',
-            'Tower Wet Bulb Temp [deg C]', 'Tower Wind Chill Temp [deg C]',
-
-
-            # Solar Position
-
-            'Zenith Angle [degrees]', 'Azimuth Angle [degrees]', 'Solar Eclipse Shading', 
-
-            'cos zenith', 'cos normal irradiance',
-
-            'apparent_zenith', 'zenith', 'apparent_elevation',
-            'elevation', 'azimuth', 'Sun NS', 'Sun EW',  
-
-            # Aerosol
-            '315nm POM-01 Photometer [nA]', '400nm POM-01 Photometer [uA]',
-            '500nm POM-01 Photometer [uA]', '675nm POM-01 Photometer [uA]',
-            '870nm POM-01 Photometer [uA]', '940nm POM-01 Photometer [uA]',
-            '1020nm POM-01 Photometer [uA]',  'Albedo (CM3)', 'Albedo (LI-200)',
-            'Albedo Quantum (LI-190)', 'Broadband Turbidity',
-
-            # Lagged Variables
-            'ghi t-1', 'dni t-1',
-            'dhi t-1', 'ghi t-2', 'dni t-2', 'dhi t-2', 'ghi t-3', 'dni t-3',
-            'dhi t-3', 'ghi t-4', 'dni t-4', 'dhi t-4', 'ghi t-5', 'dni t-5',
-            'dhi t-5', 'ghi t-6', 'dni t-6', 'dhi t-6', 'ghi t-7', 'dni t-7',
-            'dhi t-7', 'ghi t-8', 'dni t-8', 'dhi t-8', 'ghi t-9', 'dni t-9',
-            'dhi t-9',
-
-            # Lagged Window Stats
-            'cs_dev_mean t-10 ghi', 'cs_dev_mean t-10 dni',
-            'cs_dev_mean t-10 dhi', 'cs_dev_median t-10 ghi',
-            'cs_dev_median t-10 dni', 'cs_dev_median t-10 dhi',
-            'csi_stdev t-10 ghi', 'csi_stdev t-10 dni', 'csi_stdev t-10 dhi',
-            'cs_dev_mean t-60 ghi', 'cs_dev_mean t-60 dni',
-            'cs_dev_mean t-60 dhi', 'cs_dev_median t-60 ghi',
-            'cs_dev_median t-60 dni', 'cs_dev_median t-60 dhi',
-            'csi_stdev t-60 ghi', 'csi_stdev t-60 dni', 'csi_stdev t-60 dhi',
-            'dGHI', 'dDNI', 'dDHI'
-
-            # 'Global CMP22 (vent/cor) [W/m^2]',
-            # 'Direct NIP [W/m^2]', 'Direct sNIP [W/m^2]',
-            # 'Diffuse CM22-1 (vent/cor) [W/m^2]',
-        ]}
+        self.feature_groups = {
+            "Irradiance" : [
+                "GHI"
+            ],
+            "Decomposed Irradiance" : [
+                "DNI", "DHI"
+            ],
+            "Lagged 10 min GHI" : [
+                'ghi t-1', 'ghi t-2', 'ghi t-3', 'ghi t-4', 'ghi t-5', 'ghi t-6', 'ghi t-7', 'ghi t-8', 'ghi t-9'
+            ],
+            "Lagged 10 min Decomposed Irradiance" : [
+                'dni t-1',
+                'dhi t-1', 'dni t-2', 'dhi t-2', 'dni t-3',
+                'dhi t-3', 'dni t-4', 'dhi t-4', 'dni t-5',
+                'dhi t-5', 'dni t-6', 'dhi t-6', 'dni t-7',
+                'dhi t-7', 'dni t-8', 'dhi t-8', 'dni t-9',
+                'dhi t-9'
+            ],
+            "Time of Day" : [
+                'TOD'
+            ],
+            "Trig Time of Day" : [
+                'TOD Sin', 'TOD Cos'
+            ],
+            "Time of Year" : [
+                'TOY'
+            ],
+            "Trig Time of Year" : [
+                'TOY Sin', 'TOY Cos'
+            ],
+            "Time Milestones" : [
+                'time from sunrise', 'time to solar noon', 'time to sunset', 'Day', 'before solar noon'
+            ],
+            "Trig Time Milestones" : [
+                'cos time from sunrise', 'sin time from sunrise', 'cos time to solar noon',
+                'sin time to solar noon', 'cos time to sunset',  'sin time to sunset', 'Day', 'before solar noon'
+            ],
+            "Clear Sky" : [
+                'clearsky ghi', 'clearsky dni', 'clearsky dhi', 'Solar Eclipse Shading',  'zenith', 'elevation', 'azimuth'
+            ],
+            "Future Clear Sky" : [
+                "Future clearsky ghi"
+            ],
+            "Prev Hour Stats": [
+                'cs_dev t ghi', 'cs_dev t dni', 'cs_dev t dhi', 'CSI GHI', 'CSI DNI', 'CSI DHI',
+                'cs_dev_mean t-10 ghi', 'cs_dev_mean t-10 dni', 'cs_dev_mean t-10 dhi', 'cs_dev_median t-10 ghi',
+                'cs_dev_median t-10 dni', 'cs_dev_median t-10 dhi','csi_stdev t-10 ghi', 'csi_stdev t-10 dni', 'csi_stdev t-10 dhi',
+                'cs_dev_mean t-60 ghi', 'cs_dev_mean t-60 dni', 'cs_dev_mean t-60 dhi', 'cs_dev_median t-60 ghi',
+                'cs_dev_median t-60 dni', 'cs_dev_median t-60 dhi', 'csi_stdev t-60 ghi', 'csi_stdev t-60 dni', 'csi_stdev t-60 dhi',
+                'dGHI', 'dDNI', 'dDHI'
+            ],
+            "Meteorological Measurements" : [
+                'Precipitation [mm]', 'Precipitation (Accumulated) [mm]', 'Station Pressure [mBar]', 'Tower Dry Bulb Temp [deg C]', 
+                'Tower RH [%]', 'Airmass', 'Wind NS [m/s]', 'Wind EW [m/s]', 'Avg Wind Speed @ 22ft [m/s]', 'Avg Wind Direction @ 22ft [deg from N]', 
+                'Peak Wind Speed @ 22ft [m/s]', 'Snow Depth [cm]','Snow Depth Quality', 'SE Dry Bulb Temp [deg C]', 'SE RH [%]', 
+                'Vertical Wind Shear [1/s]', 'Sea-Level Pressure (Est) [mBar]', 'Tower Dew Point Temp [deg C]','Tower Wet Bulb Temp [deg C]', 
+                'Tower Wind Chill Temp [deg C]', '315nm POM-01 Photometer [nA]', '400nm POM-01 Photometer [uA]', '500nm POM-01 Photometer [uA]',
+                '675nm POM-01 Photometer [uA]', '870nm POM-01 Photometer [uA]', '940nm POM-01 Photometer [uA]', '1020nm POM-01 Photometer [uA]',  
+                'Albedo (CM3)', 'Albedo (LI-200)', 'Albedo Quantum (LI-190)', 'Broadband Turbidity',
+            ],
+            "ASI-16" : [
+                'BRBG Total Cloud Cover [%]', 'CDOC Total Cloud Cover [%]', 'CDOC Thick Cloud Cover [%]',
+                'CDOC Thin Cloud Cover [%]', 'HCF Value', 'Blue/Red_min', 'Blue/Red_mid', 'Blue/Red_max',
+                'Flag: Sun not visible', 'Flag: Sun on clear sky', 'Flag: Parts of sun covered',
+                'Flag: Sun behind clouds, bright dot visible', 'Flag: Sun outside view', 'Flag: No evaluation',
+            ]
+        } 
 
         # Declarations
-        self.selected_features = selected_features
+        if selected_groups:
+            self.selected_groups = selected_groups
+            self.selected_features = self.feature_groups_to_features(self.selected_groups)
+        elif selected_features:
+            self.selected_features = selected_features
+        else:
+            ValueError("Either Selected groups or selected responses should be selected, not both.")
         self.selected_responses = selected_responses
         
         self.n_steps_in = n_steps_in
@@ -321,10 +307,22 @@ class TabularTest():
             ValueError("scaler_type must be one of those listed in __init__")
 
         self.model_save_path = model_save_path
+
+        tf.random.set_seed(seed)
         return
 
+    def feature_groups_to_features(self, list_of_feature_groups):
+        list_of_features = []
+        for feature_group in list_of_feature_groups:
+            list_of_features.extend(self.feature_groups[feature_group])
+        return list_of_features
+
+    def feature_combinations(self): # TODO write feature combination script or not
+        return
+
+
     def import_csv(self):
-        df = dd.read_csv(cwd+"joint_data.csv", usecols=self.csv_cols, parse_dates=["dateTime"]).set_index("dateTime")
+        df = dd.read_csv(DATA_PATH, usecols=self.csv_cols, parse_dates=["dateTime"]).set_index("dateTime")
         df = df.compute()
         df = df.dropna(subset=['GHI', 'DNI','DHI',
         'BRBG Total Cloud Cover [%]', 'CDOC Total Cloud Cover [%]', 'CDOC Thick Cloud Cover [%]',
@@ -390,7 +388,7 @@ class TabularTest():
             column_scaler = self.scaler()
             self.scalers[column_name] = column_scaler.fit(self.df_train[column_name].values.reshape(-1,1))
 
-        self.response_scaler = self.scalers[selected_responses[0]]
+        self.response_scaler = self.scalers[self.selected_responses[0]]  # TODO change to allow for multiple responses
 
         return
 
@@ -443,13 +441,13 @@ class TabularTest():
         return scaled_relative_response
 
     # general windowing:
-    def window_sequence(self, df, selected_features, selected_responses, scalers, n_steps_in, n_steps_out, step_time=datetime.timedelta(minutes=10)):
+    def window_sequence(self, df, selected_features, selected_responses, scalers, n_steps_in, n_steps_out, step_time=datetime.timedelta(minutes=10)):  # TODO Reformat to allow multiprocessing
         # lists for storage
         datetimes = []
-        past_features = []
-        future_features = []
-        scalar_responses = []
-        relative_responses = []
+        selected_past_features = []
+        selected_future_features = []
+        selected_scalar_responses = []
+        selected_relative_responses = []
         clear_sky_indexes = []
         clear_sky_irradiances = []
 
@@ -458,7 +456,7 @@ class TabularTest():
         num_windows = 0
         count= 0
 
-        while end_idx < df.shape[0]-1:  # TODO reformat to for loop and tqdm
+        while end_idx < df.shape[0]-1:  # TODO reformat to for loop and tqdm TODO vectorize
             # check that time is continuous
             if pd.to_timedelta(df.index.values[end_idx] - df.index.values[start_idx]) == datetime.timedelta(minutes=(n_steps_in + n_steps_out)*10):
                 count += 1
@@ -483,12 +481,12 @@ class TabularTest():
                         relative_response_.append(self.split_relative_response(df, response, start_idx, n_steps_in, n_steps_out))
 
                 # append but first change dimensions from n_features, n_steps to n_steps, n_features
-                past_features.append(list(map(list, zip(*past_features_))))
-                future_features.append(list(map(list, zip(*future_features_))))
+                selected_past_features.append(list(map(list, zip(*past_features_))))
+                selected_future_features.append(list(map(list, zip(*future_features_))))
                 # scalar_responses.append(list(map(list, zip(*scalar_response_))))
                 # relative_responses.append(list(map(list, zip(*relative_response_))))
-                scalar_responses.append(scalar_response_)
-                relative_responses.append(relative_response_)
+                selected_scalar_responses.append(scalar_response_)
+                selected_relative_responses.append(relative_response_)
                 clear_sky_indexes.append(df["CSI GHI"].values[start_idx: start_idx+n_steps_in+n_steps_out])
                 clear_sky_irradiances.append(df["clearsky ghi"].values[start_idx: start_idx+n_steps_in+n_steps_out])
 
@@ -496,15 +494,15 @@ class TabularTest():
             end_idx+=1
 
         datetimes = np.array(datetimes).squeeze()
-        past_features = np.array(past_features).squeeze()
-        future_features = np.array(future_features).squeeze()
-        scalar_responses = np.array(scalar_responses).squeeze()
-        relative_responses = np.array(relative_responses).squeeze()
+        selected_past_features = np.array(selected_past_features).squeeze()
+        selected_future_features = np.array(selected_future_features).squeeze()
+        selected_scalar_responses = np.array(selected_scalar_responses).squeeze()
+        selected_relative_responses = np.array(selected_relative_responses).squeeze()
         clear_sky_indexes = np.array(clear_sky_indexes).squeeze()
         clear_sky_irradiances = np.array(clear_sky_irradiances).squeeze()
 
-        return [datetimes, past_features, future_features, scalar_responses, relative_responses, clear_sky_indexes, clear_sky_irradiances]
-    
+        return [datetimes, selected_past_features, selected_future_features, selected_scalar_responses, selected_relative_responses, clear_sky_indexes, clear_sky_irradiances]
+
     def create_windows(self, verbose):
         self.train_dates, self.train_past_features, self.train_future_features, self.train_scalar_responses, self.train_relative_responses, self.train_clear_sky_indexes, self.train_clear_sky_irradiances = self.window_sequence(self.df_train, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
         self.validate_dates, self.validate_past_features, self.validate_future_features, self.validate_scalar_responses, self.validate_relative_responses, self.validate_clear_sky_indexes, self.validate_clear_sky_irradiances = self.window_sequence(self.df_validate, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
@@ -607,8 +605,65 @@ class TabularTest():
                         )
         return
 
+    def build_flexible_CNN1D_LSTM(self,  
+                     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), model_name=None):
+        """function for creating the model
+        inputs must be in the shape (# windows in a batch, , )
+        past features will have a length of n_steps_in while future features will have a length of n_steps_out """
+        n_steps_in = self.n_steps_in
+        n_steps_out = self.n_steps_out
+        self.n_past_features = len([x for x in self.selected_features if x not in self.future_features])
+        self.n_future_features = len([x for x in self.selected_features if x in self.future_features])
+        self.n_responses = len(self.selected_responses)
+  
+        # tf.debugging.set_log_device_placement(True)
+        self.run["Model Structure"] = ""
+
+        # design model structure
+        # Compile
+
+        gpus = tf.config.list_logical_devices('GPU')
+        if gpus:
+            strategy = tf.distribute.MirroredStrategy(gpus)
+            with strategy.scope():
+                past_inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_past_features))
+                past_inputs_expanded = tf.keras.layers.Lambda(lambda x: tf.expand_dims(x,axis=-1),
+                                                    input_shape=(self.n_steps_in, self.n_past_features)) (past_inputs)
+
+                past_convolution = TimeDistributed(Conv1D(32,self.n_steps_in,padding="same", activation="relu"))(past_inputs_expanded)  # TODO check Kernel Size TODO SeperableConv1D TODO deep convolutions TODO Feed Conv results with unchanged inputs to deep LSTM
+                past_flattened = TimeDistributed(Flatten())(past_convolution)
+
+                x = LSTM(16)(past_flattened)
+
+                x = Dense(64, activation="relu")(x)
+                x = Dense(32, activation="relu")(x)
+                x = Dense(self.n_steps_out * self.n_responses, activation="relu")(x)
+                x = Reshape((self.n_steps_out, self.n_responses), input_shape=(self.n_steps_out * self.n_responses,))(x)
+
+                self.model = tf.keras.Model(inputs=past_flattened, outputs=x, name=model_name)
+                self.model.compile(optimizer, loss='mae')
+        else:
+            past_inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_past_features))
+            past_inputs_expanded = tf.keras.layers.Lambda(lambda x: tf.expand_dims(x,axis=-1),
+                                                input_shape=(self.n_steps_in, self.n_past_features)) (past_inputs)
+
+            past_convolution = TimeDistributed(Conv1D(32,self.n_steps_in,padding="same", activation="relu"))(past_inputs_expanded)  # TODO check Kernel Size TODO SeperableConv1D TODO deep convolutions TODO Feed Conv results with unchanged inputs to deep LSTM
+            past_flattened = TimeDistributed(Flatten())(past_convolution)
+
+            x = LSTM(16)(past_flattened)
+
+            x = Dense(64, activation="relu")(x)
+            x = Dense(32, activation="relu")(x)
+            x = Dense(self.n_steps_out * self.n_responses, activation="relu")(x)
+            x = Reshape((self.n_steps_out, self.n_responses), input_shape=(self.n_steps_out * self.n_responses,))(x)
+            
+            self.model = tf.keras.Model(inputs=past_flattened, outputs=x, name=model_name)
+            self.model.compile(optimizer, loss='mae')
+        return
+            
+
     def create_and_fit(self):
-        self.build_CNN1D_LSTM(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), model_name=None)
+        self.build_flexible_CNN1D_LSTM(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), model_name=None)
         self.model.summary()
 
         early_stopping = EarlyStopping(
@@ -638,19 +693,42 @@ class TabularTest():
                     )
         return
 
+    def rescale_to_GHI(self, y, set_clear_sky_irradiances, set_clear_sky_indexes):
+        """Take the selected response in {"GHI", 'CSI GHI', 'cs_dev t ghi', "Delta GHI", "Delta CSI"} as the output of the ML model
+        and transform to units of WHI (W/m^2)"""
+        # Squeeze and inverse transform
+        inverse_transform_y = self.response_scaler.inverse_transform(y.squeeze())
+
+        # Convert to GHI
+        if "GHI" in self.selected_responses:  # GHI wil already be accounted for TODO refactor for multiple responses TODO check logic
+            y_rescaled = inverse_transform_y
+        elif "CS GHI" in self.selected_responses:
+            y_rescaled = inverse_transform_y * set_clear_sky_irradiances[:,self.n_steps_in:]
+        elif "cs_dev t ghi" in self.selected_responses:
+            y_rescaled = inverse_transform_y + set_clear_sky_irradiances[:,self.n_steps_in:]
+        elif "Delta GHI" in self.selected_responses:
+            GHI_t0 = set_clear_sky_irradiances[:,self.n_steps_in] * set_clear_sky_indexes[:,self.n_steps_in]
+            y_rescaled = inverse_transform_y + GHI_t0
+        elif "Delta CSI" in self.selected_responses:
+            y_rescaled = inverse_transform_y + set_clear_sky_indexes[:,self.n_steps_in]
+        else:
+            ValueError("""selected_responses must include one of {"GHI", 'CSI GHI', 'cs_dev t ghi', "Delta GHI", "Delta CSI"}""")
+
+        return y_rescaled
+
     def final_error_metrics(self):
         self.y_train_predicted = self.model.predict(self.train_past_features)
         self.y_validate_predicted = self.model.predict(self.validate_past_features)
         self.y_test_predicted = self.model.predict(self.test_past_features)
 
         # rescale
-        self.y_train_predicted_rescaled = self.response_scaler.inverse_transform(self.y_train_predicted.squeeze()) * self.train_clear_sky_irradiances[:,self.n_steps_in:]
-        self.y_validate_predicted_rescaled = self.response_scaler.inverse_transform(self.y_validate_predicted.squeeze()) * self.validate_clear_sky_irradiances[:,self.n_steps_in:]
-        self.y_test_predicted_rescaled = self.response_scaler.inverse_transform(self.y_test_predicted.squeeze()) * self.test_clear_sky_irradiances[:,self.n_steps_in:]
+        self.y_train_predicted_rescaled = self.rescale_to_GHI(self.y_train_predicted, self.train_clear_sky_irradiances)
+        self.y_validate_predicted_rescaled = self.rescale_to_GHI(self.y_validate_predicted, self.validate_clear_sky_irradiances)
+        self.y_test_predicted_rescaled = self.rescale_to_GHI(self.y_test_predicted, self.test_clear_sky_irradiances)
 
-        self.y_train_true_rescaled = self.response_scaler.inverse_transform(self.train_scalar_responses.squeeze()) * self.train_clear_sky_irradiances[:,self.n_steps_in:]
-        self.y_validate_true_rescaled = self.response_scaler.inverse_transform(self.validate_scalar_responses.squeeze()) * self.validate_clear_sky_irradiances[:,self.n_steps_in:]
-        self.y_test_true_rescaled = self.response_scaler.inverse_transform(self.test_scalar_responses.squeeze()) * self.test_clear_sky_irradiances[:,self.n_steps_in:]
+        self.y_train_true_rescaled = self.rescale_to_GHI(self.train_scalar_responses, self.train_clear_sky_irradiances)
+        self.y_validate_true_rescaled = self.rescale_to_GHI(self.validate_scalar_responses, self.validate_clear_sky_irradiances)
+        self.y_test_true_rescaled = self.rescale_to_GHI(self.test_scalar_responses, self.test_clear_sky_irradiances)
 
         # MAE
         self.run["Train MAE"] = self.MAE(self.y_train_true_rescaled, self.y_train_predicted_rescaled)
@@ -881,3 +959,4 @@ class TabularTest():
             print(" Complete! ".center(40, "="))
         return
     
+# Scripting
