@@ -97,5 +97,8 @@ for response_variable in RESPONSE_ORDER:
         selected_responses=[response_variable],
         neptune_log=True,
         model_save_path=os.path.join(SOLARPROPHET_PATH, "results"),
-        selected_groups=test)
+        selected_features=test_selelected_features,
+        tags=["Ablation Study"],
+        n_job_workers=10
+        )
         tt.do_it_all()
