@@ -125,6 +125,7 @@ class TabularTest():
             self.run = neptune.init(
             project=NEPTUNE_PROJECT,
             api_token=NEPTUNE_TOKEN,
+            tags=tags
             )
         else:
             # TODO do neptune ANONYMOUS mode when not logging
@@ -135,6 +136,7 @@ class TabularTest():
         self.run["selected features"] = selected_features
         self.run["selected responses"] = selected_responses
         self.run["scaler type"] = scaler_type
+        self.n_job_workers = n_job_workers
 
         ## Scaler
         if scaler_type.lower() == "minmax":
