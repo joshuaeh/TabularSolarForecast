@@ -81,7 +81,7 @@ from constants import *
 ########## DECLARATIONS ##########
 
 class TabularTest():
-    def __init__(
+    def __init__(  # TODO make tag an argument for Neptune
         self, 
         neptune_run_name, 
         scaler_type, 
@@ -112,6 +112,7 @@ class TabularTest():
         else:
             ValueError("Either Selected groups or selected responses should be selected, not both.")
         self.selected_responses = selected_responses
+        # TODO log features and responses in one-hot manner
         
         self.n_steps_in = n_steps_in
         self.n_steps_out = n_steps_out
@@ -124,6 +125,7 @@ class TabularTest():
             api_token=NEPTUNE_TOKEN,
             )
         else:
+            # TODO do neptune ANONYMOUS mode when not logging
             self.run = {}  
 
         self.run["name"] = neptune_run_name
@@ -283,6 +285,7 @@ class TabularTest():
         return scaled_relative_response
 
     # general windowing:
+    # TODO change to make multuprocessing possible
     def window_sequence(self, df, selected_features, selected_responses, scalers, n_steps_in, n_steps_out, step_time=datetime.timedelta(minutes=10)):  # TODO Reformat to allow multiprocessing
         # lists for storage
         datetimes = []
@@ -416,37 +419,6 @@ class TabularTest():
         prediction_csi = clear_sky_indexes[:, n_steps_in-1]
         return (prediction_csi * clear_sky_irradiances[:, n_steps_in:].T).T
 
-    def build_CNN1D_LSTM(self,  
-                     optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), model_name=None):
-        
-        n_steps_in = self.n_steps_in
-        n_steps_out = self.n_steps_out
-        self.n_features = len(self.selected_features)
-        self.n_responses = len(self.selected_responses)
-  
-        # tf.debugging.set_log_device_placement(True)
-        self.run["Model Structure"] = "TimeDistributed Conv1D(32,1) > LSTM(16) > Dense(64) > Dense(32) >"
-
-        gpus = tf.config.list_logical_devices('GPU')
-        strategy = tf.distribute.MirroredStrategy(gpus)
-        with strategy.scope():
-            inputs = tf.keras.layers.Input(shape=(self.n_steps_in, self.n_features))
-            inputs_expanded = tf.keras.layers.Lambda(lambda x: tf.expand_dims(x,axis=-1),
-                                                input_shape=(self.n_steps_in, self.n_features)) (inputs)
-            x = TimeDistributed(Conv1D(32,1,padding="same", activation="relu"))(inputs_expanded)
-            x = TimeDistributed(Flatten())(x)
-            x = LSTM(16)(x)
-            x = Dense(64, activation="relu")(x)
-            x = Dense(32, activation="relu")(x)
-            x = Dense(self.n_steps_out * self.n_responses, activation="relu")(x)
-            x = Reshape((self.n_steps_out, self.n_responses), input_shape=(self.n_steps_out * self.n_responses,))(x)
-
-            self.model = tf.keras.Model(inputs=inputs, outputs=x, name=model_name)
-
-            self.model.compile(optimizer, loss='mae'
-                        )
-        return
-
     def build_flexible_CNN1D_LSTM(self,  
                      optimizer=tf.keras.optimizers.Adam(learning_rate=1e-4), model_name=None):
         """function for creating the model
@@ -525,7 +497,7 @@ class TabularTest():
             callbacks_.append(NeptuneCallback(run=self.run))
 
 
-        self.run["history"] = self.model.fit(x=self.train_past_features,
+        self.run["history"] = self.model.fit(x=self.train_past_features,  # TODO save Model Weights in Neptune
                         y=self.train_scalar_responses,
                     validation_data= (self.validate_past_features, self.validate_scalar_responses),
                     epochs = 1000,
