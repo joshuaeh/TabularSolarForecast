@@ -92,6 +92,8 @@ class TabularTest():
         model_save_path, 
         selected_features=None,
         selected_groups=None,
+        tags=None,
+        n_job_workers=None,
         seed=42
     ):
         self.csv_cols = CSV_COLS
