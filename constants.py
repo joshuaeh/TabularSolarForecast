@@ -2,6 +2,7 @@ import os
 
 # TODO make API tokens and other specifications in another file called "auth" or something similar that is not commited
 # TODO make file structure standardized
+# TODO I'd like to refactor to either specify what constants are imported from constants.py or use constants.CONSTANT syntax to assist in debugging
 
 # Directories
 HOME = os.environ["HOME"]
