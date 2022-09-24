@@ -351,24 +351,84 @@ class TabularTest():
         clear_sky_irradiances = np.array(clear_sky_irradiances).squeeze()
 
         return [datetimes, selected_past_features, selected_future_features, selected_scalar_responses, selected_relative_responses, clear_sky_indexes, clear_sky_irradiances]
+    
+    def window_sequence_parallel(self, df, selected_features, selected_responses, scalers, n_steps_in, n_steps_out, n_job_workers, step_time=datetime.timedelta(minutes=10)):
+        # lists for storage
+        datetimes = []
+        selected_past_features = []
+        selected_future_features = []
+        selected_scalar_responses = []
+        selected_relative_responses = []
+        clear_sky_indexes = []
+        clear_sky_irradiances = []
 
+        def create_window(start_idx):
+            end_idx = start_idx + n_steps_in + n_steps_out
+            # check that time is continuous
+            if pd.to_timedelta(df.index.values[end_idx] - df.index.values[start_idx]) == datetime.timedelta(minutes=(n_steps_in + n_steps_out)*10):
+                count += 1
+                datetimes.append([df.index.values[start_idx:end_idx]])
+
+                past_features_ = []
+                future_features_ = []
+                scalar_response_ = []
+                relative_response_ = []
+                
+
+                for feature in selected_features:
+                    if  not feature.startswith("Future "):  # past feature
+                        past_features_.append(self.split_past_features(df, feature, scalers, start_idx, n_steps_in))
+                    else:                               # future feature
+                        future_features_.append(self.split_scalar_response(df, feature, start_idx, n_steps_in, n_steps_out))
+            
+                for response in selected_responses:
+                    if  not response.startswith("Delta "):  # Scalar response
+                        scalar_response_.append(self.split_scalar_response(df, response, start_idx, n_steps_in, n_steps_out))
+                    else:
+                        relative_response_.append(self.split_relative_response(df, response, start_idx, n_steps_in, n_steps_out))
+
+                # append but first change dimensions from n_features, n_steps to n_steps, n_features
+                selected_past_features.append(list(map(list, zip(*past_features_))))
+                selected_future_features.append(list(map(list, zip(*future_features_))))
+                # scalar_responses.append(list(map(list, zip(*scalar_response_))))
+                # relative_responses.append(list(map(list, zip(*relative_response_))))
+                selected_scalar_responses.append(scalar_response_)
+                selected_relative_responses.append(relative_response_)
+                clear_sky_indexes.append(df["CSI GHI"].values[start_idx: start_idx+n_steps_in+n_steps_out])
+                clear_sky_irradiances.append(df["clearsky ghi"].values[start_idx: start_idx+n_steps_in+n_steps_out])
+            return
+
+        with joblib.Parallel(n_jobs=n_job_workers)(joblib.delayed(create_window)(start_index) for start_index in range(df.shape[0] - n_steps_in - n_steps_out - 1))
+
+        datetimes = np.array(datetimes).squeeze()
+        selected_past_features = np.array(selected_past_features).squeeze()
+        selected_future_features = np.array(selected_future_features).squeeze()
+        selected_scalar_responses = np.array(selected_scalar_responses).squeeze()
+        selected_relative_responses = np.array(selected_relative_responses).squeeze()
+        clear_sky_indexes = np.array(clear_sky_indexes).squeeze()
+        clear_sky_irradiances = np.array(clear_sky_irradiances).squeeze()
+
+        return
+    
     def create_windows(self, verbose):
-        self.train_dates, self.train_past_features, self.train_future_features, self.train_scalar_responses, self.train_relative_responses, self.train_clear_sky_indexes, self.train_clear_sky_irradiances = self.window_sequence(self.df_train, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
-        self.validate_dates, self.validate_past_features, self.validate_future_features, self.validate_scalar_responses, self.validate_relative_responses, self.validate_clear_sky_indexes, self.validate_clear_sky_irradiances = self.window_sequence(self.df_validate, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
-        self.test_dates, self.test_past_features, self.test_future_features, self.test_scalar_responses, self.test_relative_responses, self.test_clear_sky_indexes, self.test_clear_sky_irradiances = self.window_sequence(self.df_test, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
+        if self.n_job_workers:
+            if verbose:
+                print("Parallel Windowing".center(40,"="))
+            self.train_dates, self.train_past_features, self.train_future_features, self.train_scalar_responses, self.train_relative_responses, self.train_clear_sky_indexes, self.train_clear_sky_irradiances = self.window_sequence_parallel(self.df_train, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out, self.n_job_workers)
+            self.validate_dates, self.validate_past_features, self.validate_future_features, self.validate_scalar_responses, self.validate_relative_responses, self.validate_clear_sky_indexes, self.validate_clear_sky_irradiances = self.window_sequence_parallel(self.df_validate, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out, self.n_job_workers)
+            self.test_dates, self.test_past_features, self.test_future_features, self.test_scalar_responses, self.test_relative_responses, self.test_clear_sky_indexes, self.test_clear_sky_irradiances = self.window_sequence_parallel(self.df_test, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out, self.n_job_workers)
+        else:
+            if verbose:
+                print("Single Process Windowing".center(40,"="))
+            self.train_dates, self.train_past_features, self.train_future_features, self.train_scalar_responses, self.train_relative_responses, self.train_clear_sky_indexes, self.train_clear_sky_irradiances = self.window_sequence(self.df_train, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
+            self.validate_dates, self.validate_past_features, self.validate_future_features, self.validate_scalar_responses, self.validate_relative_responses, self.validate_clear_sky_indexes, self.validate_clear_sky_irradiances = self.window_sequence(self.df_validate, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
+            self.test_dates, self.test_past_features, self.test_future_features, self.test_scalar_responses, self.test_relative_responses, self.test_clear_sky_indexes, self.test_clear_sky_irradiances = self.window_sequence(self.df_test, self.selected_features, self.selected_responses, self.scalers, self.n_steps_in, self.n_steps_out)
 
         if verbose:
             print(f"Train windows: {len(self.train_dates)}")
             print(f"Validate windows: {len(self.validate_dates)}")
             print(f"Test windows: {len(self.test_dates)}")
         return
-
-    ## Error Stats
-    ### MAE
-    # def MAE(self, y_true, y_predicted):
-    #     n = tf.cast(len(y_true), tf.float32)
-    #     print(y_true.dtype, y_predicted.dtype)
-    #     return K.sum(K.abs(y_true - y_predicted)) / n
 
     def MAE(self, y_true, y_predicted):
         return np.absolute(np.subtract(y_true, y_predicted)).mean()
