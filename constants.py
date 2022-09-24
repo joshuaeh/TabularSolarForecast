@@ -1,5 +1,8 @@
 import os
 
+# TODO make API tokens and other specifications in another file called "auth" or something similar that is not commited
+# TODO make file structure standardized
+
 # Directories
 HOME = os.environ["HOME"]
 WORK = os.environ["WORK"]
