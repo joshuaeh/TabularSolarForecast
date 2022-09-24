@@ -169,3 +169,33 @@ FEATURE_GROUPS = {
             'Flag: Sun behind clouds, bright dot visible', 'Flag: Sun outside view', 'Flag: No evaluation',
         ]
     } 
+# TODO use .ANONYMOUS as an argument when we are debugging
+# TODO save model weights, go through Neptune best practices
+RESPONSE_FEATURES = {  # to compare in a standardized manner, we should always include the value being predicted as a feature. We will make sure to do that here
+    # TODO figure how to not include a feature twice
+    "GHI" : "GHI",
+    "CSI" : "CSI",
+    "CS DEV" : "cs_dev t ghi",
+    "Delta GHI" : "GHI",
+    "Delta CSI" : "CSI"
+}
+GROUP_ABBREVIATIONS = {
+    "Irradiance" : "GHI",  # I like this one the least
+    "Decomposed Irradiance" : "DI",  # This should in reality include I implicitly
+    "Lagged 10 min GHI" : "L10GHI",
+    "Lagged 10 min Decomposed Irradiance" : "L10DI",
+    "Time of Day" : "TOD",
+    "Trig Time of Day" : "TTOD",
+    "Time of Year" : "TOY",
+    "Trig Time of Year" : "TTOY",
+    "Time Milestones" : "TM",
+    "Trig Time Milestones" : "TTM",
+    "Clear Sky" : "CS",
+    "Future Clear Sky" : "FCS",
+    "Prev Hour Stats" : "L60Stats",
+    "Meteorological Measurements" : "MET",
+    "ASI-16" : "ASI"
+}
+GROUPS_ORDER = ["Irradiance", "Decomposed Irradiance", "Lagged 10 min GHI", "Lagged 10 min Decomposed Irradiance", "Time of Day", "Trig Time of Day", "Time of Year",
+    "Trig Time of Year", "Time Milestones", "Trig Time Milestones", "Clear Sky", "Future Clear Sky", "Prev Hour Stats", "Meteorological Measurements", "ASI-16"]
+RESPONSE_ORDER = ["GHI", "CSI", "CS DEV", "Delta GHI", "Delta CSI"]
