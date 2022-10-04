@@ -1,7 +1,7 @@
 # imports
 import os
 from solarprophet import TabularTest, SOLARPROPHET_PATH
-from constants import RESPONSE_ORDER, FEATURE_GROUPS
+from constants import RESPONSE_ORDER, FEATURE_GROUPS, CSV_COLS, GROUP_ABBREVIATIONS, RESPONSE_FEATURES, SOLARPROPHET_PATH
 
 # Functions
 def features_to_one_hot_feature_dictionary(selected_features):
@@ -86,19 +86,28 @@ FEATURE_GROUPS_TESTS = [
     ["Irradiance", "Decomposed Irradiance", "Lagged 10 min GHI", "Lagged 10 min Decomposed Irradiance", "Trig Time of Day", "Trig Time of Year", "Trig Time Milestones", "Clear Sky", "Future Clear Sky", "Prev Hour Stats", "Meteorological Measurements", "ASI-16"]
 ]
 
-for response_variable in RESPONSE_ORDER:
-    for selected_feature_groups in FEATURE_GROUPS_TESTS:
-        print(f"Response: {response_variable} Features:{selected_feature_groups}")
-        test_selected_features = create_features_list_from_groups(response_variable, FEATURE_GROUPS, selected_groups=selected_feature_groups, add_response_variable=True)
-        tt = TabularTest(neptune_run_name="Flexible Model Test",
-        scaler_type="minmax",
-        n_steps_in=13,
-        n_steps_out=12,
-        selected_responses=[response_variable],
-        neptune_log=True,
-        model_save_path=os.path.join(SOLARPROPHET_PATH, "results"),
-        selected_features=test_selelected_features,
-        tags=["Ablation Study"],
-        n_job_workers=10
-        )
-        tt.do_it_all()
+def get_keys_from_values(values_list, key_dictionary):
+    keys = []
+    for value in values_list:
+        for d_key, d_value in key_dictionary.items():
+            if d_value == value:
+                keys.append(d_key)
+    return keys
+
+for response_variable in RESPONSE_ORDER[1:]:
+    feature_groups_abbreviated = ['TTOD', 'TTOY', 'ASI']
+    feature_groups = get_keys_from_values(feature_groups_abbreviated, GROUP_ABBREVIATIONS)
+    selected_features = create_features_list_from_groups(response_variable, FEATURE_GROUPS, RESPONSE_FEATURES, selected_groups=feature_groups, add_response_variable=True)
+
+    tt = TabularTest(neptune_run_name="Flexible Model Test",
+            scaler_type="minmax",
+            n_steps_in=13,
+            n_steps_out=12,
+            selected_responses=[response_variable],
+            neptune_log=True,
+            model_save_path=os.path.join(SOLARPROPHET_PATH, "results"),
+            selected_features=selected_features,
+            tags=["Ablation Study"],
+            n_job_workers=False
+            )
+    tt.do_it_all()

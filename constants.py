@@ -198,4 +198,4 @@ GROUP_ABBREVIATIONS = {
 }
 GROUPS_ORDER = ["Irradiance", "Decomposed Irradiance", "Lagged 10 min GHI", "Lagged 10 min Decomposed Irradiance", "Time of Day", "Trig Time of Day", "Time of Year",
     "Trig Time of Year", "Time Milestones", "Trig Time Milestones", "Clear Sky", "Future Clear Sky", "Prev Hour Stats", "Meteorological Measurements", "ASI-16"]
-RESPONSE_ORDER = ["GHI", "CSI", "CS DEV", "Delta GHI", "Delta CSI"]
+RESPONSE_ORDER = ["GHI", "CSI GHI", "cs_dev t ghi", "Delta GHI", "Delta CSI"]

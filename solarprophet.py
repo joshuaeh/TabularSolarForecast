@@ -3,14 +3,13 @@
 # Standard Library
 import os
 import datetime
-import joblib
+from joblib import Parallel, delayed
 # import IPython
 # import IPython.display
 # import pytz
 import time
 # import json
 from itertools import combinations_with_replacement
-from typing import Concatenate
 
 # Anaconda / Colab Standards
 import pandas as pd
@@ -56,7 +55,15 @@ import dask.dataframe as dd
 #     from pvlib.location import Location
 #     from pvlib.iotools import read_tmy3
 
-## Neptune
+# ## Neptune
+# try:
+#     from neptune.new.integrations.tensorflow_keras import NeptuneCallback
+#     import neptune.new as neptune
+# except Exception as e:
+#     print(e)
+#     ! pip install neptune-client neptune-tensorflow-keras
+#     from neptune.new.integrations.tensorflow_keras import NeptuneCallback
+#     import neptune.new as neptune
 from neptune.new.integrations.tensorflow_keras import NeptuneCallback
 import neptune.new as neptune
 
@@ -78,8 +85,6 @@ from constants import *
 
 # import warnings
 # warnings.filterwarnings("ignore", category=DeprecationWarning) 
-
-########## DECLARATIONS ##########
 
 class TabularTest():
     def __init__(  # TODO make tag an argument for Neptune
@@ -242,14 +247,14 @@ class TabularTest():
         return
 
     def transform_(self, scales, sequence_name, sequence):
-        if sequence_name.startswith("Future "):  # future feature: rescale with same scale
-            sequence_name = sequence_name.replace("Future ", "")
+        # if sequence_name.startswith("Future "):  # future feature: rescale with same scale
+        #     sequence_name = sequence_name.replace("Future ", "")
         return scales[sequence_name].transform(sequence)
 
     def inverse_transform_(self, scales, sequence_name, sequence, n_steps_in):
-        if sequence_name.startswith("Future "):  # future feature: rescale with same scale
-            sequence_name = sequence_name.replace("Future ", "")
-        elif sequence_name.startswith("Delta "):
+        # if sequence_name.startswith("Future "):  # future feature: rescale with same scale
+        #     sequence_name = sequence_name.replace("Future ", "")
+        if sequence_name.startswith("Delta "):
             # TODO how to rescale delta_based forecasts?
             rescaled_difference = scales[sequence_name].inverse_transform(sequence)
             t0_value = 0
@@ -285,7 +290,7 @@ class TabularTest():
         """
         sequence = df[response].values
         response = sequence[start_indices + n_steps_in:start_indices + n_steps_in + n_steps_out] 
-        relative_response = response - sequence[start_indices+n_steps_in - 1]
+        relative_response = response - sequence[start_indices+n_steps_in-1]
         scaled_relative_response = self.transform_(self.scalers, response, relative_response.reshape(-1,1))
         return scaled_relative_response
 
@@ -367,7 +372,6 @@ class TabularTest():
             end_idx = start_idx + n_steps_in + n_steps_out
             # check that time is continuous
             if pd.to_timedelta(df.index.values[end_idx] - df.index.values[start_idx]) == datetime.timedelta(minutes=(n_steps_in + n_steps_out)*10):
-                count += 1
                 datetimes.append([df.index.values[start_idx:end_idx]])
 
                 past_features_ = []
@@ -399,7 +403,8 @@ class TabularTest():
                 clear_sky_irradiances.append(df["clearsky ghi"].values[start_idx: start_idx+n_steps_in+n_steps_out])
             return
 
-        with joblib.Parallel(n_jobs=n_job_workers)(joblib.delayed(create_window)(start_index) for start_index in range(df.shape[0] - n_steps_in - n_steps_out - 1))
+        
+        datetimes, selected_past_features, selected_future_features, selected_scalar_responses, selected_relative_responses, clear_sky_indexes, clear_sky_irradiances = Parallel(n_jobs=n_job_workers)(delayed(create_window)(start_index) for start_index in range(df.shape[0] - n_steps_in - n_steps_out - 1))
 
         datetimes = np.array(datetimes).squeeze()
         selected_past_features = np.array(selected_past_features).squeeze()
@@ -409,7 +414,7 @@ class TabularTest():
         clear_sky_indexes = np.array(clear_sky_indexes).squeeze()
         clear_sky_irradiances = np.array(clear_sky_irradiances).squeeze()
 
-        return
+        return [datetimes, selected_past_features, selected_future_features, selected_scalar_responses, selected_relative_responses, clear_sky_indexes, clear_sky_irradiances]
     
     def create_windows(self, verbose):
         if self.n_job_workers:
@@ -431,11 +436,27 @@ class TabularTest():
             print(f"Test windows: {len(self.test_dates)}")
         return
 
+    ### MBE
+    def MBE(self, y_true, y_predicted):
+        return np.subtract(y_true, y_predicted).mean()
+
+    def MBE_temporal_split(self, y_true, y_predicted):
+        return [self.MBE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
+
+    ### nMBE
+    def nMBE(self, y_true, y_predicted):
+        ymax = np.amax(y_true)
+        return (np.subtract(y_true, y_predicted)/ymax).mean()
+
+    def nMBE_temporal_split(self, y_true, y_predicted):
+        return [self.nMBE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
+
+    ### MAE
     def MAE(self, y_true, y_predicted):
         return np.absolute(np.subtract(y_true, y_predicted)).mean()
 
     def MAE_temporal_split(self, y_true, y_predicted):
-        return [self.MAE(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.MAE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     ### nMAE
     def nMAE(self, y_true, y_predicted):
@@ -444,14 +465,14 @@ class TabularTest():
         return (np.subtract(y_true, y_predicted)/ymax).mean()
 
     def nMAE_temporal_split(self, y_true, y_predicted):
-        return [self.nMAE(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.nMAE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     ### MSE
     def MSE(self, y_true, y_predicted):
         return np.square(np.subtract(y_true,y_predicted)).mean()
 
     def MSE_temporal_split(self, y_true, y_predicted):
-        return [self.MSE(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.MSE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     ### RMSE
     def RMSE(self, y_true, y_predicted):
@@ -459,16 +480,17 @@ class TabularTest():
         return np.sqrt(mse)
 
     def RMSE_temporal_split(self, y_true, y_predicted):
-        return [self.RMSE(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.RMSE(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     ### nRMSE
     def nRMSE(self, y_true, y_predicted):
         return 100 / (np.amax(y_true) - np.amin(y_true)) * (self.MSE(y_true, y_predicted))**(0.5)
 
     def nRMSE_temporal_split(self, y_true, y_predicted):
-        return [self.nRMSE_rescaled_GHI(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.nRMSE_rescaled_GHI(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     ### MAPE
+    #### Since we divide by 0 in some cases this does not work
 
     ### nMAP
     def nMAP(self, true, predicted):
@@ -478,7 +500,7 @@ class TabularTest():
         return 1/n * sum(num / den) * 100
 
     def nMAP_temporal_split(self, y_true, y_predicted):
-        return [self.nMAP(y_true[:,i], y_predicted[:,i]) for i in range(12)]
+        return [self.nMAP(y_true[:,i], y_predicted[:,i]) for i in range(self.n_steps_out)]
 
     def persistence_of_cloudiness_prediction(self, clear_sky_indexes, clear_sky_irradiances, n_steps_in, n_steps_out):
         prediction_csi = clear_sky_indexes[:, n_steps_in-1]
@@ -589,7 +611,7 @@ class TabularTest():
             GHI_t0 = set_clear_sky_irradiances[:,self.n_steps_in] * set_clear_sky_indexes[:,self.n_steps_in]
             y_rescaled = inverse_transform_y + GHI_t0
         elif "Delta CSI" in self.selected_responses:
-            y_rescaled = inverse_transform_y + set_clear_sky_indexes[:,self.n_steps_in]
+            y_rescaled = (inverse_transform_y + set_clear_sky_indexes[:,self.n_steps_in]) * set_clear_sky_irradiances[:,self.n_steps_in:]
         else:
             ValueError("""selected_responses must include one of {"GHI", 'CSI GHI', 'cs_dev t ghi', "Delta GHI", "Delta CSI"}""")
 
@@ -609,6 +631,26 @@ class TabularTest():
         self.y_validate_true_rescaled = self.rescale_to_GHI(self.validate_scalar_responses, self.validate_clear_sky_irradiances, self.validate_clear_sky_indexes)
         self.y_test_true_rescaled = self.rescale_to_GHI(self.test_scalar_responses, self.test_clear_sky_irradiances, self.test_clear_sky_indexes)
 
+        # MBE
+        self.run["Train MBE"] = self.MBE(self.y_train_true_rescaled, self.y_train_predicted_rescaled)
+        self.run["Validate MBE"] = self.MBE(self.y_validate_true_rescaled, self.y_validate_predicted_rescaled)
+        self.run["Test MBE"] = self.MBE(self.y_test_true_rescaled, self.y_test_predicted_rescaled)
+
+        for i in range(12):
+            self.run[f"Train MBE t+{i+1}0 min"] = self.MBE(self.y_train_true_rescaled[:,i], self.y_train_predicted_rescaled[:,i])
+            self.run[f"Validate MBE t+{i+1}0 min"] = self.MBE(self.y_validate_true_rescaled[:,i], self.y_validate_predicted_rescaled[:,i])
+            self.run[f"Test MBE t+{i+1}0 min"] = self.MBE(self.y_test_true_rescaled[:,i], self.y_test_predicted_rescaled[:,i])
+
+        # nMBE
+        self.run["Train nMBE"] = self.nMBE(self.y_train_true_rescaled, self.y_train_predicted_rescaled)
+        self.run["Validate nMBE"] = self.nMBE(self.y_validate_true_rescaled, self.y_validate_predicted_rescaled)
+        self.run["Test nMBE"] = self.nMBE(self.y_test_true_rescaled, self.y_test_predicted_rescaled)
+
+        for i in range(12):
+            self.run[f"Train nMBE t+{i+1}0 min"] = self.nMBE(self.y_train_true_rescaled[:,i], self.y_train_predicted_rescaled[:,i])
+            self.run[f"Validate nMBE t+{i+1}0 min"] = self.nMBE(self.y_validate_true_rescaled[:,i], self.y_validate_predicted_rescaled[:,i])
+            self.run[f"Test nMBE t+{i+1}0 min"] = self.nMBE(self.y_test_true_rescaled[:,i], self.y_test_predicted_rescaled[:,i])
+            
         # MAE
         self.run["Train MAE"] = self.MAE(self.y_train_true_rescaled, self.y_train_predicted_rescaled)
         self.run["Validate MAE"] = self.MAE(self.y_validate_true_rescaled, self.y_validate_predicted_rescaled)
@@ -795,6 +837,16 @@ class TabularTest():
             self.run[f"Validate FS nMAP t+{i+1}0 min"] = 1 - self.nMAP(self.y_validate_true_rescaled[:,i], self.y_validate_predicted_rescaled[:,i]) / self.MAE(self.y_validate_true_rescaled[:,i], self.validate_poc_prediction[:,i])
             self.run[f"Test FS nMAP t+{i+1}0 min"] = 1 - self.nMAP(self.y_test_true_rescaled[:,i], self.y_test_predicted_rescaled[:,i]) / self.MAE(self.y_test_true_rescaled[:,i], self.test_poc_prediction[:,i])
         return
+    
+    def graph_projection(self, save_path):
+        # Training Set
+
+        # Validation Set
+
+        # Test Set
+
+        return
+
 
     def save_and_quit(self):
         if self.neptune_log:
@@ -837,5 +889,3 @@ class TabularTest():
             print(" Saved ".center(40, "-"))
             print(" Complete! ".center(40, "="))
         return
-    
-# Scripting
