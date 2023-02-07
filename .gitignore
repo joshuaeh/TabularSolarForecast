@@ -4,6 +4,12 @@ data/
 *.tmp
 .vscode/*
 *.ipynb
+.neptune/*
+.ipynb_checkpoints/*
+results/*
+*.tar
+*.tar.gz
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
