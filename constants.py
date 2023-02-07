@@ -5,12 +5,14 @@ import os
 # TODO I'd like to refactor to either specify what constants are imported from constants.py or use constants.CONSTANT syntax to assist in debugging
 
 # Directories
-HOME = os.environ["HOME"]
-WORK = os.environ["WORK"]
-DATA_PATH = os.path.join("/work", "08940", "joshuaeh", "shared", "joint_data.csv")
-SOLARPROPHET_PATH = os.path.join(WORK, "projects", "SolarProphet")
-
-
+# HOME = os.environ["HOME"]
+# WORK = os.environ["WORK"]
+# DATA_PATH = os.path.join("/work", "08940", "joshuaeh", "shared", "joint_data.csv")
+# SOLARPROPHET_PATH = os.path.join(WORK, "projects", "SolarProphet")
+SOLARPROPHET_PATH = os.getcwd()
+JOINT_DATA_H5_PATH = os.path.join(SOLARPROPHET_PATH, "data", "joint_data.h5")
+JOINT_DATA_CSV_PATH = os.path.join(SOLARPROPHET_PATH, "data", "joint_data.csv")
+DATA_PATH = JOINT_DATA_CSV_PATH
 # Neptune connection
 NEPTUNE_PROJECT = "HorizonPSE/SP-tab"
 NEPTUNE_TOKEN = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIxNTBhNmQ1Ny04MjAzLTQ2ZjUtODA2MC0yNDllNWUxOWE2ZjkifQ=="
