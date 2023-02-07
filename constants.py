@@ -21,6 +21,11 @@ NEPTUNE_FEATURE_ABLATION_IDS = [f"SPTAB-{i}" for i in range(581, 1093)]
 NEPTUNE_PCA_TAG = "PCA"
 NEPTUNE_PCA_IDS = [f"SPTAB-{i}" for i in range(1150, 1273)]
 NEPTUNE_CACHE_PATH = os.path.join(SOLARPROPHET_PATH, "data", "neptune_cache.h5")
+
+# Misc Saved results and and caches
+DATETIME_VALUES_PATH = os.path.join(SOLARPROPHET_PATH, "data", "datetimevalues.h5")
+IDEAL_SERIES_PATH = os.path.join(SOLARPROPHET_PATH, "data", "ideal_series.csv")
+
 # Experiment parameters
 TRAIN_VALIDATE_DATE = "2020-09-27"
 VALIDATE_TEST_DATE = "2021-09-27"
