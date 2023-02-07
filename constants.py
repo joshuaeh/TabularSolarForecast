@@ -163,9 +163,6 @@ FEATURE_GROUPS = {
         "Clear Sky" : [
             'clearsky ghi', 'clearsky dni', 'clearsky dhi', 'Solar Eclipse Shading',  'zenith', 'elevation', 'azimuth'
         ],
-        "Future Clear Sky" : [
-            "Future clearsky ghi"
-        ],
         "Prev Hour Stats": [
             'cs_dev t ghi', 'cs_dev t dni', 'cs_dev t dhi', 'CSI GHI', 'CSI DNI', 'CSI DHI',
             'cs_dev_mean t-10 ghi', 'cs_dev_mean t-10 dni', 'cs_dev_mean t-10 dhi', 'cs_dev_median t-10 ghi',
