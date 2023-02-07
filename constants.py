@@ -1,4 +1,5 @@
 import os
+import datetime
 
 # TODO make API tokens and other specifications in another file called "auth" or something similar that is not commited
 # TODO make file structure standardized
