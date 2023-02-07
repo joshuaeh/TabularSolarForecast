@@ -195,10 +195,10 @@ FEATURE_GROUPS = {
 RESPONSE_FEATURES = {  # to compare in a standardized manner, we should always include the value being predicted as a feature. We will make sure to do that here
     # TODO figure how to not include a feature twice
     "GHI" : "GHI",
-    "CSI" : "CSI",
-    "CS DEV" : "cs_dev t ghi",
+    "CSI GHI" : "CSI GHI",
+    "cs_dev t ghi" : "cs_dev t ghi",
     "Delta GHI" : "GHI",
-    "Delta CSI" : "CSI"
+    "Delta CSI GHI" : "CSI GHI"
 }
 GROUP_ABBREVIATIONS = {
     "Irradiance" : "GHI",  # I like this one the least
@@ -218,5 +218,5 @@ GROUP_ABBREVIATIONS = {
     "ASI-16" : "ASI"
 }
 GROUPS_ORDER = ["Irradiance", "Decomposed Irradiance", "Lagged 10 min GHI", "Lagged 10 min Decomposed Irradiance", "Time of Day", "Trig Time of Day", "Time of Year",
-    "Trig Time of Year", "Time Milestones", "Trig Time Milestones", "Clear Sky", "Future Clear Sky", "Prev Hour Stats", "Meteorological Measurements", "ASI-16"]
-RESPONSE_ORDER = ["GHI", "CSI GHI", "cs_dev t ghi", "Delta GHI", "Delta CSI"]
+    "Trig Time of Year", "Time Milestones", "Trig Time Milestones", "Clear Sky", "Prev Hour Stats", "Meteorological Measurements", "ASI-16"]
+RESPONSE_ORDER = ["GHI", "CSI GHI", "cs_dev t ghi", "Delta GHI", "Delta CSI GHI"]
