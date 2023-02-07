@@ -16,6 +16,15 @@ DATA_PATH = JOINT_DATA_CSV_PATH
 # Neptune connection
 NEPTUNE_PROJECT = "HorizonPSE/SP-tab"
 NEPTUNE_TOKEN = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIxNTBhNmQ1Ny04MjAzLTQ2ZjUtODA2MC0yNDllNWUxOWE2ZjkifQ=="
+# Experiment parameters
+TRAIN_VALIDATE_DATE = "2020-09-27"
+VALIDATE_TEST_DATE = "2021-09-27"
+
+BEGIN_DATE = datetime.date(2017,9,27)
+CV0_DATE = datetime.date(2019,9,27)
+CV1_DATE = datetime.date(2020,9,27)
+CV2_DATE = datetime.date(2021,9,27)
+END_DATE = datetime.date(2022,9,27)
 
 CSV_COLS = ["dateTime",
         # Irradiance    
