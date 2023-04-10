@@ -4,7 +4,7 @@ Irradiance forecasting using a sky-camera.
 
 ## General Information
 
-## Work Schedule
+Work on this project is supported by the Industry-Academia partnership ["The Center for a Solar-Powered Future by 2050"](https://www.spf2050.org/)
 
 ## Guide
 
