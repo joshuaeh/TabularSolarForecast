@@ -30,7 +30,8 @@ n_steps_out = 12
 
 window_cache_path = os.path.join("data", "windows_cache.h5")
 
-for n_steps_in in [1, 2, 3, 4, 5, 6, 8, 10, 12, 13]:
+# for n_steps_in in [1, 2, 3, 4, 5, 6, 8, 10, 12, 13]:
+for n_steps_in in [7, 9, 11]:
     print(f"n_steps_in: {n_steps_in}")
     
     datetimes = []

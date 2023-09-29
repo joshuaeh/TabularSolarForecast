@@ -1,11 +1,15 @@
+#!/usr/bin/env python3
+# Author: Joshua Hammond
+# functions that may need to be done more than once for data manipulation
+
+
 import os
 
 import pandas as pd
 import h5py
 import numpy as np
-
 import dask.dataframe as dd 
-import neptune.new as neptune
+import neptune
 
 import constants
 
@@ -93,15 +97,15 @@ def load_neptune_runs(neptune_cache_path=constants.NEPTUNE_CACHE_PATH, neptune_p
         runs_table_df.head()
 
     else:
-        # neptune data
+        # query neptune
         neptune_project = neptune.init_project(
-            name=neptune_project,
+            project=neptune_project,
             api_token=neptune_token,
             mode="read-only"
             )
         runs_table_df = neptune_project.fetch_runs_table().to_pandas()
 
-        runs_table_df.drop(columns=drop_cols, inplace=True)
+        # runs_table_df.drop(columns=drop_cols, inplace=True)
         runs_table_df.to_hdf(constants.NEPTUNE_CACHE_PATH, key="neptune_cache", mode="w")
     return runs_table_df
 
