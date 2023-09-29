@@ -10,7 +10,7 @@ results/*
 *.tar
 *.tar.gz
 config.py
-
+Reports/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
