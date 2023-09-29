@@ -34,8 +34,9 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import TimeDistributed, LSTM, Dense, Flatten, Conv1D, Reshape, Dropout, Concatenate
 import dask
 import dask.dataframe as dd
-from neptune.new.integrations.tensorflow_keras import NeptuneCallback
-import neptune.new as neptune
+# from neptune.integrations.tensorflow_keras import NeptuneCallback
+from neptune.integrations.tensorflow_keras import NeptuneCallback
+import neptune
 
 # user libraries
 import constants
@@ -311,7 +312,7 @@ class TabularTest():
             self.response_scaler = self.scalers[self.selected_responses[0]]  # TODO change to allow for multiple responses
         else:
             # relative responses scale to the response relative to the value at t=0, and as such use a seperate function
-            self.response_scaler = self.fit_relative_response(self.df_train, self.scalers, self.selected_responses[0], self.scaler, self.n_steps_out)
+            self.response_scaler = self.fit_relative_response(self.df_train, self.scalers, self.selected_responses[0], self.n_steps_out)
         return None
 
     def transform_(self, scales:dict, sequence_name:str, sequence:np.ndarray) -> np.ndarray:
@@ -477,16 +478,16 @@ class TabularTest():
         window_clear_sky_irradiances = window_data["clearsky ghi"].values
 
         # append but first change dimensions from n_features, n_steps to n_steps, n_features
-        window_past_features = list(map(list, zip(*window_past_features)))
-        window_future_features = list(map(list, zip(*window_future_features)))
+        window_past_features = [list(map(list, zip(*window_past_features)))]
+        window_future_features = [list(map(list, zip(*window_future_features)))]
 
         return window_datetimes, window_past_features, window_future_features, window_scalar_responses, window_relative_responses, window_clear_sky_indexes, window_clear_sky_irradiances
 
     # general windowing:
     def window_sequential(self, 
         df:pd.DataFrame, 
-        selected_features:list[str], 
-        selected_responses:list[str], 
+        selected_features:list, 
+        selected_responses:list, 
         scalers:dict, 
         n_steps_in:int, 
         n_steps_out:int, 
@@ -558,8 +559,8 @@ class TabularTest():
 
     def window_cached(self, 
         df:pd.DataFrame, 
-        selected_features:list[str], 
-        selected_responses:list[str], 
+        selected_features:list, 
+        selected_responses:list, 
         scalers:dict, 
         n_steps_in:int, 
         n_steps_out:int) -> list:
@@ -709,11 +710,17 @@ class TabularTest():
         with h5py.File(self.window_cache_path, 'r') as f:
             datetimes = f[f"{self.n_steps_in}/datetimes"][:]                          # (n_windows, n_steps_in + n_steps_out)
             past_features = f[f"{self.n_steps_in}/past_features"][:]                  # (n_windows, n_steps_in, n_scalar_features(134))
-            future_features = f[f"{self.n_steps_in}/future_features"][:]              # (n_windows, n_steps_out, n_future_features(7))
+            future_features = f[f"{self.n_steps_in}/future_features"][:]             # (n_windows, n_steps_out, n_future_features(7))
             scalar_responses = f[f"{self.n_steps_in}/scalar_responses"][:]            # (n_windows, n_steps_out, n_scalar_responses(3)
             relative_responses = f[f"{self.n_steps_in}/relative_responses"][:]        # (n_windows, n_steps_out, n_relative_responses(2))
-            clear_sky_indexes = f[f"{self.n_steps_in}/clear_sky_indexes"][:]          # (n_windows, n_steps_in + n_steps_out)
+            clear_sky_indexes = f[f"{self.n_steps_in}/clear_sky_indexes"][:]         # (n_windows, n_steps_in + n_steps_out)
             clear_sky_irradiances = f[f"{self.n_steps_in}/clear_sky_irradiances"][:]  # (n_windows, n_steps_in + n_steps_out)
+        
+        if self.n_steps_in == 1:
+            past_features = np.expand_dims(past_features, axis=1)
+            
+        print(f"past_features.shape: {past_features.shape}")
+        
         if verbose:
             print("\nDone")
             
@@ -729,7 +736,7 @@ class TabularTest():
                 print(f"clear_sky_irradiances.shape: {clear_sky_irradiances.shape}")
             
         # convert datetimes from int64 to tz-aware datetime
-        datetimes = pd.DatetimeIndex(datetimes).tz_localize("UTC").tz_convert("MST")
+        datetimes = pd.DatetimeIndex(datetimes).tz_localize("UTC").tz_convert("MST").to_numpy()
 
         # get indices of relevant datetimes
         train_validate_date = pd.to_datetime(train_validate_date + " 00:00:00").tz_localize("MST")
