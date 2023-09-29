@@ -9,6 +9,7 @@ data/
 results/*
 *.tar
 *.tar.gz
+config.py
 
 
 # Byte-compiled / optimized / DLL files
