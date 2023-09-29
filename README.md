@@ -1,6 +1,6 @@
 # SolarProphet
 
-Irradiance forecasting using a sky-camera.  
+Irradiance forecasting using features extracted from a sky-camera 
 
 ## General Information
 
@@ -19,14 +19,22 @@ Follow the instructions below once the prerequisites are met to create an enviro
 * [git](https://git-scm.com/downloads)
 * [anaconda distribution](https://www.anaconda.com/products/distribution)
 
-### Create conda environment named `solarprophet` with `python 3.8`:
+There may be problems with GPU dependencies on your system. These are the processes I used for my PC and M1 Mac, but your
+results may vary. For specifics on installation, especially tensorflow, see:
+
+* [Install Tensorflow Documentation](https://www.tensorflow.org/install/)
+* [Tensorflow-metal plugin for Apple Silicon and AMD GPUs](https://developer.apple.com/metal/tensorflow-plugin/)
+
+### Windows Installation
+
+Create conda environment named `solarprophet` with `python 3.8`:
 
 ```bash
 conda create -n solarprophet python=3.8
 conda activate solarprophet
 ```
 
-### Follow GPU Setup instructions [from TensorFlow](https://www.tensorflow.org/install/pip) 
+Follow GPU Setup instructions [from TensorFlow](https://www.tensorflow.org/install/pip) 
 
 ```bash
 conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1.0
@@ -37,12 +45,42 @@ pip install "tensorflow<2.11"
 python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 ```
 
-### Install remaining packages
+Install remaining packages
 
 ```bash
-pip install pandas seaborn Pillow scipy dask statsmodels tqdm neptune neptune-tensorflow-keras ipykernel joblib scikit-learn
+pip install pandas seaborn Pillow scipy dask statsmodels tqdm neptune neptune-tensorflow-keras ipykernel joblib scikit-learn Jinja2
 # pytables is a bit finnicky, needs to be installed and upgraded
 pip install --user --upgrade tables  
 ```
 
-### Common Problems
+### Linux/MacOS Installation
+
+Create conda environment named `solarprophet` with `python 3.8`:
+
+```bash
+conda create -n solarprophet python=3.8
+conda activate solarprophet
+```
+
+Install packages:
+
+```bash
+python -m pip install tensorflow
+```
+
+If using tensorflow-metal for Apple Silicon or AMD GPUs:
+
+```bash
+python -m pip install tensorflow-metal
+```
+
+Install remaining packages:
+
+```bash
+python -m pip  install pandas seaborn Pillow scipy dask statsmodels tqdm neptune neptune-tensorflow-keras ipykernel joblib scikit-learn Jinja2
+conda install pytables
+```
+
+If tensorflow installation worked correctly, `python tf_test.py` should work and start a training bar
+
+## Manifest
