@@ -3,14 +3,12 @@ data/
 *.DS_Store
 *.tmp
 .vscode/*
-*.ipynb
 .neptune/*
 .ipynb_checkpoints/*
 results/*
 *.tar
 *.tar.gz
 config.py
-Reports/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
