@@ -150,4 +150,68 @@ conda install pytables
 
 If tensorflow installation worked correctly, `python tf_test.py` should work and start a training bar
 
-## Manifest
+### Using SolarProphet
+
+`SolarProphet` is an object-oriented class. When initializing an object, declare any non-default parameters. The parameters accepted are:  
+
+```python
+# Required Parameters
+n_steps_in: int,  # number of timesteps used in input
+n_steps_out: int,  # number of timesteps used in output prediction
+selected_features: list = None,  # Features to be used as inputs (NOTE: either selected_features or selected_groups should be passed, not both)
+selected_groups: list = None,  # Groups of features to be used as inputs (NOTE: either selected_features or selected_groups should be passed, not both)
+selected_responses: list = [
+    "GHI"
+],  # response variable to be predicted (NOTE: format required is a list but currently only one response variable is supported)
+scaler_type: str = "minmax",  # scaler for raw data {minmax, normalizer, powertransformer, quantiletransformer, robustscaler, standardscaler} (default is minmax)
+data_path: str = None,  # path to measurement data. Eiter .h5 or .csv format is accepted. See data gathering script for more details on data format (str or path-like)
+## Saving and cache parameters (optional)
+model_save_path: str = None,
+datetimes_cache_path: str = None,
+window_cache_path: str = None,  # path to saved windows with datetimes, features, responses, etc.
+all_past_features: list = constants.PAST_FEATURES,
+all_future_features: list = constants.FUTURE_FEATURES,
+all_scalar_responses: list = constants.SCALAR_RESPONSES,
+all_relative_responses: list = constants.RELATIVE_RESPONSES,
+noise_model: int = 0,  # noise model to use for unmeasured disturbances (default is 0)
+# Model (optional)
+model=None,  # specified tensorflow model (default will build CNN-LSTM model) (tf model)
+# model must have input shape: (batch_size, n_steps_in, n_features)
+# model must have output shape: (batch_size, n_steps_out)  when multiple regressed features are used: (batch_size, n_steps_out, n_regressed_variables)
+model_name: str = None,  # name of model if desired. Only letters,numbers, and spaces
+# Optimizer and training tuning parameters (optional)
+scale_responses: bool = True,  # scale responses
+epochs: int = 200,  # maximum number of epochs to train model (default is 200)
+shuffle_training_order: bool = False,  # shuffle training order of windows (default is False)
+batch_size: int = 1000,  # batch size for training (default is 1000 windows)
+loss: str = "mae",  # loss function for model {mae or mse} (default is mae)
+optimizer=None,  # custom tf optimizer if desired (default is Adam optimizer)
+learning_rate: float = 1e-3,  # learning rate may be a static value or a tf.optimizers.schedules object
+callbacks=[],  # list of tf.keras.callbacks to be used during training (default is empty list)
+early_stopping: bool = False,  # implement early stopping (default is False)
+stopping_patience: int = 50,  # (early stopping only) number of epochs to wait without improvement before stopping training (default is 50)
+stopping_min_delta: float = 1e-7,  # (early stopping only) minimum objective function improvement to reset the patience counter (default is 1e-7)
+metrics=None,  # list of metrics to be used during training (default is None)
+dropout_ratio=0,
+fit_verbose: int = 0,  # verbosity of model.fit() (default is 0)
+# Utility Parameters (optional)
+data_cols: list = constants.DATA_COLS,  # columns of raw data to be read in (default is constants.CSV_COLS)
+feature_groups: dict = constants.FEATURE_GROUPS,  # dictionary pairing of feature groups and the features the group contains (default is constants.FEATURE_GROUPS)
+scalar_response: list = constants.SCALAR_RESPONSES,  #
+relative_response: list = constants.RELATIVE_RESPONSES,
+seed: int = 42,  # random seed for reproducibility used in all rng-based functions (default is 42)
+n_job_workers: int = 1,  # number of workers to use for parallel processing (default is 1)
+# Neptune Parameters (optional)
+neptune_log: bool = False,  # log results to neptune (default is False)
+neptune_run_name: str = None,  # name of neptune run (default is None)
+tags: list = None,  # tags to be added to neptune run (default is None)
+```
+
+After initializing an object, `SolarProphet` has functions to:
+
+1. Clean, scale, and format data into input-output pairs as well as re-scale afterward.
+2. Create or load a keras model with or without the noise model
+3. Train and save a model
+4. Evaluate model predictions.
+
+Please see the individual methods within `solarprophet.py` as well as the examples from model development and refinement in the `notebooks/` directory.  
