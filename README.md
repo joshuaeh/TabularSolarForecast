@@ -1,6 +1,6 @@
 # Tabular Solar Forecast
 
-![Data Flow](Figures/data_flow.pdf)
+![Data Flow](Figures/data_flow.png)
 
 Irradiance forecasting under data transmission constraints using features extracted from a sky-camera. Work completed by Joshua Hammond, Ricardo Lara, Michael Baldea, and Brian Korgel.
 
