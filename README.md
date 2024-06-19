@@ -1,6 +1,12 @@
 # SolarProphet
 
-Irradiance forecasting using features extracted from a sky-camera 
+Irradiance forecasting under data transmission constraints using features extracted from a sky-camera. Work completed by Joshua Hammond, Ricardo Lara, Michael Baldea, and Brian Korgel.
+
+A CNN-LSTM model uses tabular features extracted from a sky camera, local meteorological measurements, and the clear sky model to forecast irradiance up to two-hours ahead at 10-minute intervals. Novel contributions include:  
+
+- A data-parsimonious approach to irradiance forecasting in contrast to many contemporary models that require high dimensional inputs.  
+- A noise model inspired by control theory which models the effect of random unmeasured disturbances or dropped features.  
+- Multiple Irradiance representations. We show strong results when predicting irradiance as the deviation from the persistence prediction at the time of forecast. We believe this creates a normalizing effect allowing the model to learn what inputs are associated with _changes_ from the persistence assumption.  
 
 ## General Information
 
