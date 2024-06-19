@@ -9,6 +9,9 @@ results/*
 *.tar
 *.tar.gz
 config.py
+Reports/
+Figures/
+results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
