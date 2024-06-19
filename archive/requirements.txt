@@ -1,9 +1,0 @@
-python3-wget
-opencv-python
-numpy
-glob
-matplotlib
-torch  # using 12.3 nightly build for M1 metal acceleration
-scikit-image
-joblib
-black
