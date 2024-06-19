@@ -1,4 +1,4 @@
-# SolarProphet
+# Tabular Solar Forecast
 
 Irradiance forecasting under data transmission constraints using features extracted from a sky-camera. Work completed by Joshua Hammond, Ricardo Lara, Michael Baldea, and Brian Korgel.
 
@@ -77,11 +77,9 @@ Data is available at [https://utexas.box.com/v/TabularSolarForecast](https://ute
 
 The included file `sample_config.py` should be renamed to `config.py` and should contain values for the neptune project name and api key. This file is included in the `.gitignore` manifest so that the API key is not committed to a repository by mistake.
 
-Instructions assume a Windows OS with NVIDIA card. Mathods should be similar for other operating systems but may require some modifications. If running without a graphics card, the tensorflow installation will be different, and running the model will use the CPU.
+Instructions assume a Windows OS with NVIDIA card. Methods should be similar for other operating systems but may require some modifications. If running without a graphics card, the tensorflow installation will be different, and running the model will use the CPU.
 
 Follow the instructions below once the prerequisites are met to create an environment with the required dependencies, or execute the `create_env.sh` script to automatically do the steps below for an NVIDIA GPU setup or `create_env_NoGPU.sh` for a CPU installation of TensorFlow.
-
-### Prerequisites
 
 * [git](https://git-scm.com/downloads)
 * [anaconda distribution](https://www.anaconda.com/products/distribution)
