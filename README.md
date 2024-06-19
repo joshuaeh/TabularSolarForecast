@@ -57,6 +57,15 @@ This repository contains the source code and results for Tabular Solar Forecasti
 * - available at https://utexas.box.com/v/TabularSolarForecast
 ```
 
+### Acknowledgements
+
+Financial support of this work was provided by the Robert A. Welch Foundation (F-1464), the [Center for a Solar Powered Future (SPF2050)](https://www.spf2050.org/)—an Industry-University Cooperative Research Center (IUCRC) funded by the National Science Foundation (EEC-2052814).  
+
+We would like to thank Drs. Herie Soto, Dhruv Aurora, Hadi Jamali-Rad, Pierre Carrette and Ojas Shreikar for their feedback while working on this research.  
+
+Data was drawn from the NREL SRRL BMS: Andreas, A.; Stoffel, T.; (1981). NREL Solar Radiation Research Laboratory (SRRL): Baseline Measurement System (BMS); Golden, Colorado (Data); NREL Report No. DA-5500-56488. http://dx.doi.org/10.5439/1052221  
+
+Clear sky model predictions were calculated using [pvlib](https://github.com/pvlib/pvlib-python)
 
 ## Getting Started
 
