@@ -25,6 +25,39 @@ If this work helped you, please consider citing the [preprint available on ArXiv
 }
 ```
 
+### Contents
+
+This repository contains the source code and results for Tabular Solar Forecasting under data transmission constraints. The weights of the final model are saved in the `final_model/` directory. Other results data, and the dataset used is available at [https://utexas.box.com/v/TabularSolarForecast](https://utexas.box.com/v/TabularSolarForecast).  
+
+```text
+.
+├── common_params.py - Stores settings and functions for convenience
+├── config.py - stores user-specific API keys
+├── sample_config.py - template for config.py to be populated with user-specific values
+├── constants.py - Stores commonly used variables for convenience
+├── create_env_NoGPU.sh - script to set up environment if no GPU is available
+├── create_env.sh - script to set up environemnt if GPU is available
+├── create_window_cache.py - Creates cache of timestamps where every parameter has valid data
+├── download_data.py - script to download meteorological and sky camera data from the NREL SRRL BMS
+├── solarprophet.py - module that contains an object-priented class for pre-processing, training, evaluating, and saving  the solar forecasting model.
+├── tf_test.py - script to  test the environment
+├── utils.py - utility functions
+├── data/*
+│   ├── datetimevalues.h5
+│   ├── ideal_series.csv
+│   ├── joint_data.csv
+│   ├── joint_data.h5
+│   ├── literature_results.py
+│   ├── neptune_cache.h5
+│   └── windows_cache.h5
+├── final_model/ - Saved keras weights of final model.
+├── notebooks/ - notebooks used during development and figures for reports
+└── results/* - Saved model weights and corresponding predictions, true irradiance values, and persistence predictions.
+
+* - available at https://utexas.box.com/v/TabularSolarForecast
+```
+
+
 ## Getting Started
 
 The included file `sample_config.py` should be renamed to `config.py` and should contain values for the neptune project name and api key. This file is included in the `.gitignore` manifest so that the API key is not committed to a repository by mistake.
