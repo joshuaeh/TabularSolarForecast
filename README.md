@@ -1,5 +1,7 @@
 # Tabular Solar Forecast
 
+![Data Flow](Figures/data_flow.pdf)
+
 Irradiance forecasting under data transmission constraints using features extracted from a sky-camera. Work completed by Joshua Hammond, Ricardo Lara, Michael Baldea, and Brian Korgel.
 
 A CNN-LSTM model uses tabular features extracted from a sky camera, local meteorological measurements, and the clear sky model to forecast irradiance up to two-hours ahead at 10-minute intervals. Novel contributions include:  
