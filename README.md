@@ -10,7 +10,20 @@ A CNN-LSTM model uses tabular features extracted from a sky camera, local meteor
 
 ## General Information
 
-Work on this project is supported by the Industry-Academia partnership ["The Center for a Solar-Powered Future by 2050"](https://www.spf2050.org/)
+Work on this project is supported by the Industry-Academia partnership ["The Center for a Solar-Powered Future by 2050"](https://www.spf2050.org/).  
+
+If this work helped you, please consider citing the [preprint available on ArXiv](https://arxiv.org/abs/2403.12873):  
+
+```text
+@misc{hammond2024,
+    title={Short-Term Solar Irradiance Forecasting Under Data Transmission Constraints}, 
+    author={Joshua Edward Hammond and Ricardo A. Lara Orozco and Michael Baldea and Brian A. Korgel},
+    year={2024},
+    eprint={2403.12873},
+    archivePrefix={arXiv}
+    }
+}
+```
 
 ## Getting Started
 
