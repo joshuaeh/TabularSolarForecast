@@ -1564,8 +1564,10 @@ class TabularTest:
         return y_rescaled
 
     def final_error_metrics(self, cv):
-        self.y_train_predicted = self.model.predict(self.train_inputs)
-        self.y_validate_predicted = self.model.predict(self.validation_inputs)
+        # self.y_train_predicted = self.model.predict(self.train_inputs)
+        # self.y_validate_predicted = self.model.predict(self.validation_inputs)
+        self.y_train_predicted = self.model.predict(self.train_past_features)
+        self.y_validate_predicted = self.model.predict(self.validate_past_features)
 
         # rescale
         if self.scale_responses:
