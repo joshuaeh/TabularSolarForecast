@@ -898,7 +898,23 @@ class TabularTest:
         else:
             self.y_train_true = self.train_scalar_responses
             self.y_validate_true = self.validate_scalar_responses
-
+        
+        # add noise model to inputs
+        if self.noise_model:
+            self.train_inputs = [
+                self.train_past_features,
+                rng.normal(size=[self.train_past_features.shape[0], self.n_steps_in]),
+            ]
+            self.validation_inputs = [
+                self.validate_past_features,
+                rng.normal(
+                    size=[self.validate_past_features.shape[0], self.n_steps_in]
+                ),
+            ]
+        else:
+            self.train_inputs = self.train_past_features
+            self.validation_inputs = self.validate_past_features
+        
         if verbose:
             print(f"Train windows: {len(self.train_dates)}")
 
@@ -1243,6 +1259,22 @@ class TabularTest:
             self.y_train_true = self.train_scalar_responses
             self.y_validate_true = self.validate_scalar_responses
 
+        # add noise model to inputs
+        if self.noise_model:
+            self.train_inputs = [
+                self.train_past_features,
+                rng.normal(size=[self.train_past_features.shape[0], self.n_steps_in]),
+            ]
+            self.validation_inputs = [
+                self.validate_past_features,
+                rng.normal(
+                    size=[self.validate_past_features.shape[0], self.n_steps_in]
+                ),
+            ]
+        else:
+            self.train_inputs = self.train_past_features
+            self.validation_inputs = self.validate_past_features
+
         if verbose:
             print(f"Train windows: {len(self.train_dates)}")
 
@@ -1439,22 +1471,6 @@ class TabularTest:
         if self.neptune_log:
             self.callbacks.append(NeptuneCallback(run=self.run))
 
-        #
-        if self.noise_model:
-            self.train_inputs = [
-                self.train_past_features,
-                rng.normal(size=[self.train_past_features.shape[0], self.n_steps_in]),
-            ]
-            self.validation_inputs = [
-                self.validate_past_features,
-                rng.normal(
-                    size=[self.validate_past_features.shape[0], self.n_steps_in]
-                ),
-            ]
-        else:
-            self.train_inputs = self.train_past_features
-            self.validation_inputs = self.validate_past_features
-
         ### Begin training on MSE loss ###
         original_epochs = self.epochs
         remaining_epochs = max(500, original_epochs - 500)
@@ -1564,10 +1580,8 @@ class TabularTest:
         return y_rescaled
 
     def final_error_metrics(self, cv):
-        # self.y_train_predicted = self.model.predict(self.train_inputs)
-        # self.y_validate_predicted = self.model.predict(self.validation_inputs)
-        self.y_train_predicted = self.model.predict(self.train_past_features)
-        self.y_validate_predicted = self.model.predict(self.validate_past_features)
+        self.y_train_predicted = self.model.predict(self.train_inputs)
+        self.y_validate_predicted = self.model.predict(self.validation_inputs)
 
         # rescale
         if self.scale_responses:
